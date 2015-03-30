@@ -1,0 +1,11 @@
+v0.9 - 2015-03-30
+=================
+
+- Added initial version of Palladium
+  - Added scripts to fit, grid-search, test, and list models
+  - Added script to provide model as web service
+  - Added scripts to create Docker images of Palladium-based services
+  - Added documentation and tutorial
+  - Added Iris classification as sample application
+  - Added examples how to integrate R and Julia models
+  - Added information on how to setup Palladium with Mesos / Marathon

@@ -1,0 +1,10 @@
+Acknowledgment
+--------------
+
+Palladium has been developed by the Data Science team of the Otto
+Group Business Intelligence Department (Otto Group BI). The authors
+would like to thank Benjamin Bossan, Timo Duchrow, Josef Feigl, Henner
+Graubitz, Hendrik Makait, Christian Rammig, Grzegorz Rygielski for
+giving valuable input regarding requirements and use cases, for
+testing intermediate versions and providing feedback on how to improve
+Palladium.

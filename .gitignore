@@ -1,0 +1,10 @@
+*.egg-info
+.coverage
+bin/
+docs/modules/palladium.rst
+docs/modules/palladium.tests.rst
+examples/*/*db
+include/
+lib/
+__pycache__/
+_build/

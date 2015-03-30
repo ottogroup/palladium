@@ -1,0 +1,4 @@
+cov-core==1.14.0
+coverage==3.7.1
+pytest==2.6.4
+pytest-cov==1.8.0
