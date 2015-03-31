@@ -1,10 +1,11 @@
-import numpy
 import os
-from pandas import DataFrame
-from pandas import Series
-
+import readline  # https://github.com/ContinuumIO/anaconda-issues/issues/152
 from unittest.mock import MagicMock
 from unittest.mock import Mock
+
+import numpy
+from pandas import DataFrame
+from pandas import Series
 
 import pytest
 
