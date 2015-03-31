@@ -29,6 +29,7 @@ possible to independently integrate own solutions.
    :width: 700px
    :align: center
    :alt: Illustration of Palladium
+
 |
 
 Much of Palladium's functionality is based on the **scikit-learn**

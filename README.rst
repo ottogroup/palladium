@@ -24,10 +24,11 @@ your model's accuracy, then that's what Palladium allows you to do
 **without writing a single line of code**. However, it is also
 possible to independently integrate own solutions.
 
-.. image:: docs/palladium_illustration.png
+.. image:: https://raw.githubusercontent.com/ottogroup/palladium/master/docs/palladium_illustration.png
    :width: 700px
    :align: center
    :alt: Illustration of Palladium
+
 |
 
 Much of Palladium's functionality is based on the **scikit-learn**
