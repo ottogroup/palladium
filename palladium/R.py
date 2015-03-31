@@ -7,14 +7,14 @@ import numpy as np
 from pandas import DataFrame
 from pandas import Series
 from pandas.rpy.common import convert_to_r_dataframe
-import rpy2.robjects
+from rpy2 import robjects
 from rpy2.robjects.numpy2ri import numpy2ri
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
 
 
 class ObjectMixin:
-    r = rpy2.robjects.r
+    r = robjects.r
 
     def __init__(self, scriptname, funcname, **kwargs):
         self.scriptname = scriptname

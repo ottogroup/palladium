@@ -19,19 +19,59 @@ from unittest.mock import MagicMock
 
 import sphinx_rtd_theme
 
+Mock = MagicMock
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return Mock()
+MOCK_MODULES = [
+    'dateutil',
+    'dateutil.rrule',
+    'dateutil.parser',
+    'docopt',
+    'flask',
+    'joblib',
+    'julia',
+    'numpy',
+    'pandas',
+    'pandas.rpy',
+    'pandas.rpy.common',
+    'pandas.io',
+    'pandas.io.parsers',
+    'pandas.io.sql',
+    'rpy2',
+    'rpy2.objects',
+    'rpy2.robjects.numpy2ri',
+    'psutil',
+    'pytest',
+    'scipy',
+    'sklearn',
+    'sklearn.grid_search',
+    'sklearn.metrics',
+    'sklearn.preprocessing',
+    'sklearn.base',
+    'sqlalchemy',
+    'sqlalchemy.ext',
+    'sqlalchemy.ext.declarative',
+    'sqlalchemy.orm',
+    'ujson',
+    'werkzeug',
+    'werkzeug.exceptions',
+]
 
-MOCK_MODULES = ['julia', 'numpy', 'pandas', 'rpy2', 'scipy', 'scikit-learn']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
+# Needed to avoid metaclass error while mocking
+base = sys.modules['sklearn.base']
+from abc import ABCMeta
+
+
+class Dummy(object):
+    pass
+
+base.BaseEstimator = Dummy
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
 
