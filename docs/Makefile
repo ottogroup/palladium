@@ -6,7 +6,7 @@ SPHINX_APIDOC_OPTIONS = members,special-members,show-inheritance
 SPHINXOPTS    =
 SPHINXBUILD   = SPHINX_APIDOC_OPTIONS=$(SPHINX_APIDOC_OPTIONS) \
 	            sphinx-apidoc -f -o modules ../palladium/ && \
-	            PALLADIUM_CONFIG=no sphinx-build
+	            sphinx-build
 PAPER         =
 BUILDDIR      = _build
 
