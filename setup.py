@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = '0.9'
+version = '0.9.1'
 
 install_requires = [
     'docopt',
@@ -9,6 +9,7 @@ install_requires = [
     'joblib',
     'numpy',
     'pandas',
+    'psutil',
     'scikit-learn',
     'ujson',
     ]
