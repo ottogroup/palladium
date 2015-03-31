@@ -1,4 +1,5 @@
 import os
+import readline  # https://github.com/ContinuumIO/anaconda-issues/issues/152
 
 import pytest
 
