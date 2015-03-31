@@ -26,15 +26,27 @@ docs_require = [
 
 here = os.path.abspath(os.path.dirname(__file__))
 try:
-    README = open(os.path.join(here, 'README.rst')).read()
-    CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+    README = open(os.path.join(here, 'README.rst'), encoding='utf-8').read()
+    CHANGES = open(os.path.join(here, 'CHANGES.txt'), encoding='utf-8').read()
 except IOError:
     README = CHANGES = ''
 
 
 setup(name='palladium',
       version=version,
-      description='',
+      description='Framework for setting up predictive analytics services',
+      long_description=README,
+      url='https://github.com/ottogroup/palladium',
+      author='Otto Group',
+      author_email='palladium@ottogroup.com',
+      license='Apache License, Version 2.0',
+      classifiers=[
+          'Development Status :: 5 - Production/Stable',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: Apache Software License',
+          'Programming Language :: Python :: 3.3',
+          'Programming Language :: Python :: 3.4',
+      ],
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,

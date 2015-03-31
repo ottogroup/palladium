@@ -31,11 +31,11 @@ possible to independently integrate own solutions.
    :alt: Illustration of Palladium
 |
 
-Much of Palladium's functionality is based on the **scikit-learn** library.
-Thus, a lot of times you will find yourself looking at the
+Much of Palladium's functionality is based on the **scikit-learn**
+library.  Thus, a lot of times you will find yourself looking at the
 `documentation for scikit-learn <http://scikit-learn.org/>`_ when
-developing with Palladium.  Although being implemented in Python, Model
-Stack provides support for other languages and is shipped with
+developing with Palladium.  Although being implemented in Python,
+Palladium provides support for other languages and is shipped with
 examples how to **integrate and expose R and Julia models**.
 
 For an efficient deployment of services based on Palladium, a script to
@@ -71,6 +71,7 @@ application.
   user/R
   user/julia
   user/faq
+  user/related-projects
 
 API Reference
 -------------
@@ -82,6 +83,7 @@ method, this part of the documentation is for you.
   :maxdepth: 2
 
   modules/palladium
+
 
 Indices and tables
 ------------------
