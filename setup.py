@@ -7,6 +7,7 @@ install_requires = [
     'docopt',
     'flask',
     'joblib',
+    'numpy',
     'pandas',
     'scikit-learn',
     'ujson',
