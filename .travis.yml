@@ -1,6 +1,8 @@
 language: python
 python:
 - "3.4"
+env:
+  - TRAVIS=yes
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran r-base

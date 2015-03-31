@@ -6,6 +6,8 @@ from palladium.tests import run_smoke_tests_with_config
 
 
 pytest.importorskip("julia")
+pytestmark = pytest.mark.skipif(
+    os.environ.get("TRAVIS"), reason="Skipping julia tests in Travis")
 pytest_plugins = 'palladium'
 
 
