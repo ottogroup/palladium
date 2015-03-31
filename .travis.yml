@@ -9,9 +9,8 @@ before_install:
 - ./miniconda.sh -b
 - export PATH=/home/travis/miniconda/bin:$PATH
 - conda update --yes conda
-- travis_retry conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy
+- travis_retry conda install --yes python=$TRAVIS_PYTHON_VERSION --file requirements.txt
 install:
-- travis_retry pip install -r requirements.txt
 - travis_retry pip install rpy2==2.5.2
 - travis_retry python setup.py dev
 script: travis_wait py.test --runslow
