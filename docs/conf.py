@@ -60,7 +60,6 @@ sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # Needed to avoid metaclass error while mocking
 base = sys.modules['sklearn.base']
-from abc import ABCMeta
 
 
 class Dummy(object):

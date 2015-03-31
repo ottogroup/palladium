@@ -1,3 +1,11 @@
+.. image:: https://travis-ci.org/ottogroup/palladium.svg?branch=master
+    :target: https://travis-ci.org/ottogroup/palladium
+
+.. image:: https://readthedocs.org/projects/palladium/badge/?version=latest
+    :target: https://readthedocs.org/projects/palladium/?badge=latest
+    :alt: Documentation Status
+
+
 Palladium
 =========
 
