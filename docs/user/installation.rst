@@ -33,6 +33,22 @@ same version numbers that the release was made with.  You can find the
 level directory of Palladium's source tree or download it here:
 :download:`requirements.txt <../../requirements.txt>`.
 
+Install from binstar
+====================
+
+For installing Palladium with `conda install`, you have to add the
+following binstar channel first:
+
+.. code-block:: bash
+
+  conda config --add channels https://conda.binstar.org/ottogroup
+  conda install palladium
+
+.. note::
+
+  Right now, there is only a version for `linux-64` platforms available
+  at our binstar channel.
+
 Install from source
 ===================
 
@@ -54,8 +70,6 @@ install:
 
 .. code-block:: bash
 
-  conda config --add channels https://conda.binstar.org/asmeurer  #docopt
-  conda config --add channels https://conda.binstar.org/menpo  #joblib
   cd palladium
   conda create -n palladium python=3 --file requirements.txt  #create conda environment
   source activate palladium  # activate conda environment

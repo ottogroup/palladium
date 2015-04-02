@@ -11,6 +11,7 @@ install_requires = [
     'pandas',
     'psutil',
     'scikit-learn',
+    'sqlalchemy',
     'ujson',
     ]
 
