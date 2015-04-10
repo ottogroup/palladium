@@ -46,8 +46,8 @@ following binstar channel first:
 
 .. note::
 
-  Right now, there is only a version for `linux-64` platforms available
-  at our binstar channel.
+  Right now, there are only versions for `linux-64` and `osx-64`
+  platforms available at our binstar channel.
 
 Install from source
 ===================
