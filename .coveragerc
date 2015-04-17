@@ -1,2 +1,4 @@
 [run]
-omit = palladium/tests/*
+omit =
+       palladium/tests/*
+       palladium/__init__.py
