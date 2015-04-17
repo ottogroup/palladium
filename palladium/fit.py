@@ -69,7 +69,7 @@ def fit_cmd(argv=sys.argv[1:]):  # pragma: no cover
 Fit a model and save to database.
 
 Usage:
-  palladium-fit [options]
+  pld-fit [options]
 
 Options:
   -n --no-save              Don't persist the fitted model to disk.
@@ -130,7 +130,7 @@ def grid_search_cmd(argv=sys.argv[1:]):  # pragma: no cover
 Grid search parameters for the model.
 
 Usage:
-  palladium-grid-search [options]
+  pld-grid-search [options]
 
 Options:
   -h --help                Show this screen.

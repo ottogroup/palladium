@@ -288,7 +288,7 @@ def version_cmd(argv=sys.argv[1:]):  # pragma: no cover
 Print the version number of Palladium.
 
 Usage:
-  palladium-version [options]
+  pld-version [options]
 
 Options:
   -h --help                Show this screen.

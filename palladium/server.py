@@ -207,7 +207,7 @@ def devserver_cmd(argv=sys.argv[1:]):  # pragma: no cover
 Run a server for development.
 
 Usage:
-  palladium-devserver [options]
+  pld-devserver [options]
 
 Options:
   -h --help                  Show this screen.

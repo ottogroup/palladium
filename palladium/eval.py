@@ -40,7 +40,7 @@ def test_cmd(argv=sys.argv[1:]):  # pragma: no cover
 Test a model.
 
 Usage:
-  palladium-test [options]
+  pld-test [options]
 
 Options:
   -h --help                  Show this screen.
@@ -65,7 +65,7 @@ def list_cmd(argv=sys.argv[1:]):  # pragma: no cover
 List information about available models.
 
 Usage:
-  palladium-list [options]
+  pld-list [options]
 
 Options:
   -h --help                  Show this screen.
