@@ -1,10 +1,26 @@
 .. image:: https://travis-ci.org/ottogroup/palladium.svg?branch=master
     :target: https://travis-ci.org/ottogroup/palladium
+    :alt: Build status
+
+.. image:: https://coveralls.io/repos/ottogroup/palladium/badge.svg?branch=master
+    :target: https://coveralls.io/r/z4r/python-coveralls
+    :alt: Test coverage status
 
 .. image:: https://readthedocs.org/projects/palladium/badge/?version=latest
     :target: https://readthedocs.org/projects/palladium/?badge=latest
-    :alt: Documentation Status
+    :alt: Documentation status
 
+.. image:: https://pypip.in/py_versions/palladium/badge.svg
+    :target: https://pypi.python.org/pypi/palladium/
+    :alt: Supported Python versions
+
+.. image:: https://pypip.in/version/palladium/badge.svg
+    :target: https://pypi.python.org/pypi/palladium/
+    :alt: Latest version
+
+.. image:: https://pypip.in/license/palladium/badge.svg
+    :target: https://pypi.python.org/pypi/palladium/
+    :alt: License
 
 Palladium
 =========
