@@ -93,15 +93,10 @@ class TestPredictService:
         request = Mock()
         with patch.object(predict_service, 'do') as psd:
             with flask_app.test_request_context():
-                with patch('palladium.util.get_config') as get_config:
-                    meta_dict = {
-                        'service_metadata': {}
-                    }
-                    get_config.return_value = meta_dict
-                    bad_request = BadRequest()
-                    bad_request.args = ('daniel',)
-                    psd.side_effect = bad_request
-                    resp = predict_service(model, request)
+                bad_request = BadRequest()
+                bad_request.args = ('daniel',)
+                psd.side_effect = bad_request
+                resp = predict_service(model, request)
         resp_data = json.loads(resp.get_data(as_text=True))
         assert resp.status_code == 400
         assert resp_data == {
@@ -119,13 +114,8 @@ class TestPredictService:
         request = Mock()
         with patch.object(predict_service, 'do') as psd:
             with flask_app.test_request_context():
-                with patch('palladium.util.get_config') as get_config:
-                    meta_dict = {
-                        'service_metadata': {}
-                    }
-                    get_config.return_value = meta_dict
-                    psd.side_effect = PredictError("mymessage", 123)
-                    resp = predict_service(model, request)
+                psd.side_effect = PredictError("mymessage", 123)
+                resp = predict_service(model, request)
         resp_data = json.loads(resp.get_data(as_text=True))
         assert resp.status_code == 500
         assert resp_data == {
@@ -142,13 +132,8 @@ class TestPredictService:
         request = Mock()
         with patch.object(predict_service, 'do') as psd:
             with flask_app.test_request_context():
-                with patch('palladium.util.get_config') as get_config:
-                    meta_dict = {
-                        'service_metadata': {}
-                    }
-                    get_config.return_value = meta_dict
-                    psd.side_effect = KeyError("model")
-                    resp = predict_service(model, request)
+                psd.side_effect = KeyError("model")
+                resp = predict_service(model, request)
         resp_data = json.loads(resp.get_data(as_text=True))
         assert resp.status_code == 500
         assert resp_data == {
@@ -178,12 +163,7 @@ class TestPredictService:
         model.predict_proba.return_value = np.array([[0.1, 0.5, 0.4]])
         predict_service = PredictService(mapping=[], predict_proba=True)
         with flask_app.test_request_context():
-            with patch('palladium.util.get_config') as get_config:
-                meta_dict = {
-                    'service_metadata': {}
-                }
-                get_config.return_value = meta_dict
-                resp = predict_service(model, request)
+            resp = predict_service(model, request)
         resp_data = json.loads(resp.get_data(as_text=True))
         assert resp.status_code == 200
         assert resp_data == {
