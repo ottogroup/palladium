@@ -162,7 +162,7 @@ class PredictService(metaclass=ABCMeta):
           The :class:`~Model` instance to use for making predictions.
         :param request:
           A werkzeug ``request`` object.  A dictionary with query
-          parameters is available at *request.args*.
+          parameters is available at *request.values*.
 
         :return:
           A werkzeug ``response`` object.  It is the

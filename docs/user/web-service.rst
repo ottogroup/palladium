@@ -55,10 +55,10 @@ version as well as status information. An example:
       "result": "Iris-virginica",
       "metadata": {
           "service_name": "iris",
-	  "error_code": 0,
-	  "status": "OK",
-	  "service_version": "0.1"
-      }
+          "error_code": 0,
+          "status": "OK",
+          "service_version": "0.1"
+          }
   }
 
 An example that failed contains a ``status`` set to ``ERROR``, an
@@ -70,11 +70,38 @@ An example that failed contains a ``status`` set to ``ERROR``, an
   {
       "metadata": {
           "service_name": "iris",
-	  "error_message": "BadRequest: ...",
-	  "error_code": -1,
-	  "status": "ERROR",
-	  "service_version": "0.1"
-      }
+          "error_message": "BadRequest: ...",
+          "error_code": -1,
+          "status": "ERROR",
+          "service_version": "0.1"
+          }
+  }
+
+It's also possible to send a POST request instead of GET and predict
+for a number of samples at the same time.  Say you want to predict for
+the class for two Iris examples, then your POST body might look like
+this:
+
+.. code-block:: json
+
+  [
+    {"sepal length": 6.3, "sepal width": 2.5, "petal length": 4.9, "petal width": 1.5},
+    {"sepal length": 5.3, "sepal width": 1.5, "petal length": 3.9, "petal width": 0.5}
+  ]
+
+The response will generally look the same, with the exception that now
+there's a list of predictions that's returned:
+
+.. code-block:: json
+
+  {
+      "result": ["Iris-virginica", "Iris-versicolor"],
+      "metadata": {
+          "service_name": "iris",
+          "error_code": 0,
+          "status": "OK",
+          "service_version": "0.1"
+          }
   }
 
 Should a different output format be desired than the one implemented
