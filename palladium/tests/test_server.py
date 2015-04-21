@@ -44,16 +44,14 @@ class TestPredictService:
 
         with flask_app.test_request_context():
             with patch('palladium.util.get_config') as get_config:
-                meta_dict = {
+                get_config.return_value = {
                     'service_metadata': {
                         'service_name': 'iris',
                         'service_version': '0.1'
                     }
                 }
-                get_config.return_value = meta_dict
-                resp = service(
-                    model,
-                    Mock(args=dict([
+                request = Mock(
+                    args=dict([
                         ('sepal length', '5.2'),
                         ('sepal width', '3.5'),
                         ('petal length', '1.5'),
@@ -64,8 +62,10 @@ class TestPredictService:
                         ('austrian', 'False'),
                         ('threshold', '0.7'),
                         ('threshold2', '0.8'),
-                    ]))
-                )
+                        ]),
+                    method='GET',
+                    )
+                resp = service(model, request)
 
         assert (model.predict.call_args[0][0] ==
                 np.array([[5.2, 3.5, 1.5, 0.2,
@@ -144,7 +144,7 @@ class TestPredictService:
                 }
             }
 
-    def test_sample_from_request(self, PredictService):
+    def test_sample_from_data(self, PredictService):
         predict_service = PredictService(
             mapping=[
                 ('name', 'str'),
@@ -153,10 +153,10 @@ class TestPredictService:
             )
 
         model = Mock()
-        request = Mock(args={'name': 'myflower', 'sepal width': 3})
-        sample, params = predict_service.sample_from_request(model, request)
-        assert sample[0][0] == 'myflower'
-        assert sample[0][1] == 3
+        request_args = {'name': 'myflower', 'sepal width': 3}
+        sample = predict_service.sample_from_data(model, request_args)
+        assert sample[0] == 'myflower'
+        assert sample[1] == 3
 
     def test_probas(self, PredictService, flask_app):
         model = Mock()
@@ -173,6 +173,64 @@ class TestPredictService:
                 },
             "result": [0.1, 0.5, 0.4],
             }
+
+    def test_post_request(self, PredictService, flask_app):
+        model = Mock()
+        model.predict.return_value = np.array([3, 2])
+
+        service = PredictService(
+            mapping=[
+                ('sepal length', 'float'),
+                ('sepal width', 'float'),
+                ('petal length', 'float'),
+                ('petal width', 'float'),
+                ],
+            params=[
+                ('threshold', 'float'),
+                ],
+            )
+
+        request = Mock(
+            json=[
+                {
+                    'sepal length': '5.2',
+                    'sepal width': '3.5',
+                    'petal length': '1.5',
+                    'petal width': '0.2',
+                    },
+                {
+                    'sepal length': '5.7',
+                    'sepal width': '4.0',
+                    'petal length': '2.0',
+                    'petal width': '0.7',
+                    },
+                ],
+            args=dict(threshold=1.0),
+            method='POST',
+            mimetype='application/json',
+            )
+
+        with flask_app.test_request_context():
+            resp = service(model, request)
+
+        assert (model.predict.call_args[0][0] == np.array([
+            [5.2, 3.5, 1.5, 0.2],
+            [5.7, 4.0, 2.0, 0.7],
+            ],
+            dtype='object',
+            )).all()
+        assert model.predict.call_args[1]['threshold'] == 1.0
+
+        assert resp.status_code == 200
+        expected_resp_data = {
+            "metadata": {
+                "status": "OK",
+                "error_code": 0,
+                },
+            "result": [3, 2],
+            }
+
+        assert json.loads(resp.get_data(as_text=True)) == expected_resp_data
 
 
 class TestPredict:
