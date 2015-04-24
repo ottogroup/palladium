@@ -107,41 +107,26 @@ Building a Docker image with your Palladium application
 =======================================================
 
 First you need to pull or build the palladium_base image. If you want
-to build the base image, use the ``create_base.sh`` script and the
-Dockerfile located in the directory
+to build the base image, use the ``Dockerfile`` in the directory
 ``addons/docker/palladium_base_image.`` Alternatively, you can
-download the files here: :download:`create_base.sh
-<../../addons/docker/palladium_base_image/create_base.sh>` and
-:download:`Dockerfile
+download the Dockerfile here: :download:`Dockerfile
 <../../addons/docker/palladium_base_image/Dockerfile>`.
 
-Run in your terminal the build command:
+Run docker build in your terminal:
 
 .. code-block:: bash
 
-  sudo create_base.sh <path_to_palladium> <owner/palladium_base_name:version> 
+  sudo docker build -t myname/palladium_base:1.0 .
 
-A docker image with the name ``owner/palladium_base:version`` should now be
-created. You can check this with
+A docker image with the name ``myname/palladium_base:1.0`` should now
+be created. You can check this with
 
 .. code-block:: bash
 
   sudo docker images
 
-If network problems occur while you are running the build script, a
-possible solution may be to disable dnsmasq in your
-NetworkManager.conf. You can do that by commenting out the line
-dns=dnsmasq in /etc/NetworkManager/NetworkManager.conf
-
-Afterwards restart your network manager and Docker.
-
-.. code-block:: bash
-  
-  sudo restart network-manager
-  sudo restart docker
-
-Now you can build your application on top of the Palladium base
-image. You can download the script here: :download:`create.sh
+Now you're ready to build your application on top of the Palladium
+base image. You can download the script here: :download:`create.sh
 <../../addons/docker/palladium_app_image/create.sh>`. Alternatively,
 you can also find it in the source folder
 ``addons/docker/palladium_app_image``. Run the script with the
@@ -149,8 +134,8 @@ command:
 
 .. code-block:: bash
 
-  create.sh <path_to_app_folder> <owner/palladium_app_name:version>
-            <owner/palladium_base_name:version>
+  create.sh <path_to_app_folder> myname/my_palladium_app:1.0
+            ottogroup/palladium_base:0.9.1
       
 For more information take a look at the :download:`readme.txt
 <../../addons/docker/palladium_app_image/readme.txt>` file.
@@ -159,7 +144,7 @@ Type in the following command to test your image:
 
 .. code-block:: bash
 
-  sudo docker run -i -t <owner/palladium_app_name:version> /bin/bash
+  sudo docker run -i -t myname/my_palladium_app:1.0 /bin/bash
 
 Setup Palladium with Mesos / Marathon and Docker
 ================================================
