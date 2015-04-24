@@ -1,11 +1,11 @@
-This script creates a Dockerfile and a copy of your application into
-the folder. Then it is building the docker palladium image with your
-application inside.
+The pld-docker-app script creates a Dockerfile and a copy of your
+application into the folder. Then it is building the docker palladium
+image with your application inside.
 
-Run "create" command with the path to your application folder and the
+Run pld-docker-app with the path to your application folder and the
 image name as parameters:
 
-    ./create.sh <path_to_app_folder> ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
+    pld-docker-app <path_to_app_folder> ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
 
 Application folder structure:
 .
@@ -24,10 +24,10 @@ folder and put the package source code there. At the moment only
 .tar.gz are supported.
 
 If you want to add conda channels you, have to do it manually in the
-create.sh script. Edit create.sh and go to the line where the conda
-channels are mentioned. You can enter your channels there by following
-the example. If you run the script now, your channels
-should be added to the image during the build process.
+pld-docker-app script. Edit pld-docker-app script and go to the line
+where the conda channels are mentioned. You can enter your channels
+there by following the example. If you run the script now, your
+channels should be added to the image during the build process.
 
 TEST:
 

@@ -106,10 +106,17 @@ statistics about response times of the calls performed.
 Building a Docker image with your Palladium application
 =======================================================
 
-First you need to pull or build the palladium_base image. If you want
-to build the base image, use the ``Dockerfile`` in the directory
-``addons/docker/palladium_base_image.`` Alternatively, you can
-download the Dockerfile here: :download:`Dockerfile
+Building the Palladium base image
+---------------------------------
+
+Here's instructions on how to build the Palladium base image.  This
+isn't usually necessary, as you'll probably want to just use the
+released base images for Palladium and add your application on top,
+see `Building a Palladium app image`_.
+
+A ``Dockerfile`` is available in the directory
+``addons/docker/palladium_base_image`` for building a base image.  You
+can download the file here: :download:`Dockerfile
 <../../addons/docker/palladium_base_image/Dockerfile>`.
 
 Run docker build in your terminal:
@@ -125,18 +132,22 @@ be created. You can check this with
 
   sudo docker images
 
-Now you're ready to build your application on top of the Palladium
-base image. You can download the script here: :download:`create.sh
-<../../addons/docker/palladium_app_image/create.sh>`. Alternatively,
-you can also find it in the source folder
-``addons/docker/palladium_app_image``. Run the script with the
-command:
+Building a Palladium app image
+------------------------------
+
+Palladium has support for quickly building a Docker image to run your
+own application based on the Palladium base image.
+
+As an example, let's build a Docker image for the Iris example that's
+included in the source.  We'll use the Palladium base image for
+version 0.9.1, and we'll name our own image ``my_palladium_app``.
+Thus, we invoke ``pld-docker-app`` like so:
 
 .. code-block:: bash
 
-  ./create.sh <path_to_app_folder> ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
+  pld-docker-app palladium-src/examples/iris ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
 
-  For more information take a look at the :download:`readme.txt
+For more information, take a look at the :download:`readme.txt
 <../../addons/docker/palladium_app_image/readme.txt>` file.
 
 Type in the following command to test your image:
