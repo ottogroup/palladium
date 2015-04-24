@@ -5,7 +5,7 @@ application inside.
 Run "create" command with the path to your application folder and the
 image name as parameters:
 
-    create.sh <path to folder> <owner/palladium_app_name:version> <owner/palladium_base_name:version>
+    ./create.sh <path_to_app_folder> ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
 
 Application folder structure:
 .
@@ -36,7 +36,7 @@ TEST:
    sudo docker run -d app_name_predict
 
 3. get container ID   
-   sudo docker run ps
+   sudo docker ps
 
 4. get container IP address
    sudo docker inspect -f '{{.NetworkSettings.IPAddress}}' container_id

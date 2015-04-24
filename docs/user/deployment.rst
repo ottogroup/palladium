@@ -134,10 +134,9 @@ command:
 
 .. code-block:: bash
 
-  create.sh <path_to_app_folder> myname/my_palladium_app:1.0
-            ottogroup/palladium_base:0.9.1
-      
-For more information take a look at the :download:`readme.txt
+  ./create.sh <path_to_app_folder> ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
+
+  For more information take a look at the :download:`readme.txt
 <../../addons/docker/palladium_app_image/readme.txt>` file.
 
 Type in the following command to test your image:
