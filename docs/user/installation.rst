@@ -21,17 +21,22 @@ following commands assume that you have your environment active.
 Install from PyPI
 =================
 
-Simply run:
+It is a good practice to install dependencies with exactly the same
+version numbers that the release was made with.  You can find the
+``requirements.txt`` that defines those version numbers in the top
+level directory of Palladium's source tree or can download it here:
+:download:`requirements.txt <../../requirements.txt>`.  You can
+install the dependencies with the following command:
+
+.. code-block:: bash
+
+  pip install -r requirements.txt
+
+In order to install Palladium from PyPI, simply run:
 
 .. code-block:: bash
 
   pip install palladium
-
-It's also a good practice to install dependencies with exactly the
-same version numbers that the release was made with.  You can find the
-``requirements.txt`` that defines those version numbers in the top
-level directory of Palladium's source tree or download it here:
-:download:`requirements.txt <../../requirements.txt>`.
 
 Install from binstar
 ====================

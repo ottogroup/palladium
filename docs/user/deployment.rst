@@ -111,8 +111,10 @@ Building the Palladium base image
 
 Here's instructions on how to build the Palladium base image.  This
 isn't usually necessary, as you'll probably want to just use the
-released base images for Palladium and add your application on top,
-see `Building a Palladium app image`_.
+`released base images
+<https://registry.hub.docker.com/u/ottogroup/palladium-base/>`_ for
+Palladium and add your application on top, see `Building a Palladium
+app image`_.
 
 A ``Dockerfile`` is available in the directory
 ``addons/docker/palladium_base_image`` for building a base image.  You
@@ -136,7 +138,13 @@ Building a Palladium app image
 ------------------------------
 
 Palladium has support for quickly building a Docker image to run your
-own application based on the Palladium base image.
+own application based on the Palladium base image. The Palladium base
+image can be pulled from Docker Hub as follows:
+
+.. code-block:: bash
+
+  docker pull ottogroup/palladium-base
+
 
 As an example, let's build a Docker image for the Iris example that's
 included in the source.  We'll use the Palladium base image for
@@ -178,9 +186,9 @@ To test your image you can:
 
 1) Create app images using ``pld-dockerize`` as shown above.
 
-2) Run the "predict" image (e.g. ``my-palladium-app-predict`` if you
+2) Run the "predict" image (e.g., ``my-palladium-app-predict`` if you
    used ``my-palladium-app`` to create the image), and map the Docker
-   container's port 8000 to a local port (e.g. 8001)::
+   container's port 8000 to a local port (e.g., 8001)::
 
      sudo docker run -d -p 8001:8000 my-palladium-app-predict
 
@@ -218,7 +226,7 @@ like this:
       "id": "<app_name>",
       "container": {
           "docker": {
-              "image": "<owner/palladium_app_name:version>",
+              "image": "<owner/palladium-app-name:version>",
 	      "network": "BRIDGE",
 	      "parameters": [
 		  {"key": "link", "value":"<some_container_to_link>"}
@@ -258,7 +266,7 @@ like this:
 You have to replace the Docker image name, port number (currently set
 to 8000) and - if there is any dependency - specify links to other
 containers. If you have a Docker image of the Iris service available
-(named `user/palladium-iris_predict:0.1`), you can use this file:
+(named `user/palladium-iris-predict:0.1`), you can use this file:
 
 .. code-block:: json
 
@@ -266,7 +274,7 @@ containers. If you have a Docker image of the Iris service available
     "id": "palladium-iris", 
       "container": {
 	  "docker": {
-	      "image": "user/palladium-iris_predict:0.1",
+	      "image": "user/palladium-iris-predict:0.1",
 	      "network": "BRIDGE",
 	      "parameters": [
 	      ],
