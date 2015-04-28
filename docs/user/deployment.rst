@@ -106,60 +106,94 @@ statistics about response times of the calls performed.
 Building a Docker image with your Palladium application
 =======================================================
 
-First you need to pull or build the palladium_base image. If you want
-to build the base image, use the ``create_base.sh`` script and the
-Dockerfile located in the directory
-``addons/docker/palladium_base_image.`` Alternatively, you can
-download the files here: :download:`create_base.sh
-<../../addons/docker/palladium_base_image/create_base.sh>` and
-:download:`Dockerfile
+Building the Palladium base image
+---------------------------------
+
+Here's instructions on how to build the Palladium base image.  This
+isn't usually necessary, as you'll probably want to just use the
+`released base images
+<https://registry.hub.docker.com/u/ottogroup/palladium-base/>`_ for
+Palladium and add your application on top, see `Building a Palladium
+app image`_.
+
+A ``Dockerfile`` is available in the directory
+``addons/docker/palladium_base_image`` for building a base image.  You
+can download the file here: :download:`Dockerfile
 <../../addons/docker/palladium_base_image/Dockerfile>`.
 
-Run in your terminal the build command:
+Run ``docker build`` in your terminal:
 
 .. code-block:: bash
 
-  sudo create_base.sh <path_to_palladium> <owner/palladium_base_name:version> 
+  sudo docker build -t myname/palladium-base:1.0 .
 
-A docker image with the name ``owner/palladium_base:version`` should now be
-created. You can check this with
+A Docker image with the name ``myname/palladium-base:1.0`` should now
+be created. You can check this with:
 
 .. code-block:: bash
 
   sudo docker images
 
-If network problems occur while you are running the build script, a
-possible solution may be to disable dnsmasq in your
-NetworkManager.conf. You can do that by commenting out the line
-dns=dnsmasq in /etc/NetworkManager/NetworkManager.conf
+Building a Palladium app image
+------------------------------
 
-Afterwards restart your network manager and Docker.
-
-.. code-block:: bash
-  
-  sudo restart network-manager
-  sudo restart docker
-
-Now you can build your application on top of the Palladium base
-image. You can download the script here: :download:`create.sh
-<../../addons/docker/palladium_app_image/create.sh>`. Alternatively,
-you can also find it in the source folder
-``addons/docker/palladium_app_image``. Run the script with the
-command:
+Palladium has support for quickly building a Docker image to run your
+own application based on the Palladium base image. The Palladium base
+image can be pulled from Docker Hub as follows:
 
 .. code-block:: bash
 
-  create.sh <path_to_app_folder> <owner/palladium_app_name:version>
-            <owner/palladium_base_name:version>
-      
-For more information take a look at the :download:`readme.txt
-<../../addons/docker/palladium_app_image/readme.txt>` file.
+  docker pull ottogroup/palladium-base
 
-Type in the following command to test your image:
+
+As an example, let's build a Docker image for the Iris example that's
+included in the source.  We'll use the Palladium base image for
+version 0.9.1, and we'll name our own image ``my-palladium-app``.
+Thus, we invoke ``pld-dockerize`` like so:
 
 .. code-block:: bash
 
-  sudo docker run -i -t <owner/palladium_app_name:version> /bin/bash
+  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:0.9.1 myname/my-palladium-app:1.0
+
+This command will in fact create two images: one that's called
+``my-palladium-app``, another one that's called
+``my-palladium-app-predict``.  The latter extends the former by adding
+calls to automatically fit your model and start a web server.
+
+By default ``pld-dockerize`` will create the Dockerfile files *and*
+create the Docker containers.  You may want to create the Dockerfile
+files only using the ``-d`` flag, and then modify files
+``Dockerfile-app`` and ``Dockerfile-predict`` according to your needs.
+
+Your application's folder (``examples/iris`` in this case) should look
+like this:
+
+::
+
+  .
+  |--- config.py
+  |--- setup.py (optional)
+  |--- requirements.txt (optional)
+  '--- python_packages (optional)
+       |--- package1.tar.gz
+       |--- package2.tar.gz
+       '--- ...
+
+You may put additional requirements as shown into a
+``python_packages`` subdirectory.
+
+To test your image you can:
+
+1) Create app images using ``pld-dockerize`` as shown above.
+
+2) Run the "predict" image (e.g., ``my-palladium-app-predict`` if you
+   used ``my-palladium-app`` to create the image), and map the Docker
+   container's port 8000 to a local port (e.g., 8001)::
+
+     sudo docker run -d -p 8001:8000 my-palladium-app-predict
+
+3) Your application should be up and running now.  You should be able
+   to access this URL:  http://localhost:8001/alive
 
 Setup Palladium with Mesos / Marathon and Docker
 ================================================
@@ -192,7 +226,7 @@ like this:
       "id": "<app_name>",
       "container": {
           "docker": {
-              "image": "<owner/palladium_app_name:version>",
+              "image": "<owner/palladium-app-name:version>",
 	      "network": "BRIDGE",
 	      "parameters": [
 		  {"key": "link", "value":"<some_container_to_link>"}
@@ -232,7 +266,7 @@ like this:
 You have to replace the Docker image name, port number (currently set
 to 8000) and - if there is any dependency - specify links to other
 containers. If you have a Docker image of the Iris service available
-(named `user/palladium-iris_predict:0.1`), you can use this file:
+(named `user/palladium-iris-predict:0.1`), you can use this file:
 
 .. code-block:: json
 
@@ -240,7 +274,7 @@ containers. If you have a Docker image of the Iris service available
     "id": "palladium-iris", 
       "container": {
 	  "docker": {
-	      "image": "user/palladium-iris_predict:0.1",
+	      "image": "user/palladium-iris-predict:0.1",
 	      "network": "BRIDGE",
 	      "parameters": [
 	      ],
