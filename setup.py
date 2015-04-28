@@ -73,5 +73,5 @@ setup(name='palladium',
               'palladium = palladium.tests',
               ],
           },
-      scripts=['bin/pld-docker-app'],
+      scripts=['bin/pld-dockerize'],
       )

@@ -119,14 +119,14 @@ A ``Dockerfile`` is available in the directory
 can download the file here: :download:`Dockerfile
 <../../addons/docker/palladium_base_image/Dockerfile>`.
 
-Run docker build in your terminal:
+Run ``docker build`` in your terminal:
 
 .. code-block:: bash
 
   sudo docker build -t myname/palladium_base:1.0 .
 
-A docker image with the name ``myname/palladium_base:1.0`` should now
-be created. You can check this with
+A Docker image with the name ``myname/palladium_base:1.0`` should now
+be created. You can check this with:
 
 .. code-block:: bash
 
@@ -141,20 +141,45 @@ own application based on the Palladium base image.
 As an example, let's build a Docker image for the Iris example that's
 included in the source.  We'll use the Palladium base image for
 version 0.9.1, and we'll name our own image ``my_palladium_app``.
-Thus, we invoke ``pld-docker-app`` like so:
+Thus, we invoke ``pld-dockerize`` like so:
 
 .. code-block:: bash
 
-  pld-docker-app palladium-src/examples/iris ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
+  pld-dockerize palladium-src/examples/iris ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
 
-For more information, take a look at the :download:`readme.txt
-<../../addons/docker/palladium_app_image/readme.txt>` file.
+This command will in fact create two images: one that's called
+``my_palladium_app``, another one that's called
+``my_palladium_app_predict``.  The latter extends the former by adding
+calls to automatically fit your model and start a web server.
 
-Type in the following command to test your image:
+Your application's folder (``examples/iris`` in this case) should look
+like this:
 
-.. code-block:: bash
+::
 
-  sudo docker run -i -t myname/my_palladium_app:1.0 /bin/bash
+  .
+  |--- config.py
+  |--- setup.py (optional)
+  |--- requirements.txt (optional)
+  '--- python_packages (optional)
+       |--- package1.tar.gz
+       |--- package2.tar.gz
+       '--- ...
+
+You may put additional requirements as shown into a
+``python_packages`` subdirectory.
+
+To test your image you can:
+
+1) Create app images using ``pld-dockerize`` as shown above.
+
+2) Run the "predict" image (e.g. ``my_palladium_app_predict``), and
+   map the Docker container's port 8000 to a local port (e.g. 8001)::
+
+     sudo docker run -d -p 8001:8000 my_palladium_app_predict
+
+3) Your application should be up and running now.  You should be able
+   to access this URL:  http://localhost:8001/alive
 
 Setup Palladium with Mesos / Marathon and Docker
 ================================================
