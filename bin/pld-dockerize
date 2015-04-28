@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################
 # Script to build an Palladium app docker image
-# Assumption: palladium_base image available
+# Assumption: palladium-base image available
 ###############################################
 
 # Usage info
@@ -16,8 +16,8 @@ Docker container that I'll create.
 
 Example values:
   - PATH_TO_APP: .../examples/iris/
-  - BASE_IMAGE_NAME: ottogroup/palladium_base:0.9.1
-  - IMAGE_NAME: myname/my_palladium_app:1.0
+  - BASE_IMAGE_NAME: ottogroup/palladium-base:0.9.1
+  - IMAGE_NAME: myname/my-palladium-app:1.0
 
 Options:
     -h          display this help and exit
@@ -73,7 +73,7 @@ FILE="Dockerfile"
 /bin/cat <<EOM >$FILE-app
 #############################################################
 # Dockerfile to build palladium app
-# Based on palladium_base image
+# Based on palladium-base image
 #############################################################
 
 # Set the base image to $2
@@ -168,5 +168,5 @@ echo "CMD gunicorn --workers=3 -b" '$'"(ifconfig | grep -Eo 'inet (addr:)?([0-9]
 
 # Build image
 if [ "$dry_run" -eq 0 ]; then
-    sudo docker build -f $FILE-predict -t ${3%%:*}_predict:${3##*:} .;
+    sudo docker build -f $FILE-predict -t ${3%%:*}-predict:${3##*:} .;
 fi

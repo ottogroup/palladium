@@ -123,9 +123,9 @@ Run ``docker build`` in your terminal:
 
 .. code-block:: bash
 
-  sudo docker build -t myname/palladium_base:1.0 .
+  sudo docker build -t myname/palladium-base:1.0 .
 
-A Docker image with the name ``myname/palladium_base:1.0`` should now
+A Docker image with the name ``myname/palladium-base:1.0`` should now
 be created. You can check this with:
 
 .. code-block:: bash
@@ -140,16 +140,16 @@ own application based on the Palladium base image.
 
 As an example, let's build a Docker image for the Iris example that's
 included in the source.  We'll use the Palladium base image for
-version 0.9.1, and we'll name our own image ``my_palladium_app``.
+version 0.9.1, and we'll name our own image ``my-palladium-app``.
 Thus, we invoke ``pld-dockerize`` like so:
 
 .. code-block:: bash
 
-  pld-dockerize palladium-src/examples/iris ottogroup/palladium_base:0.9.1 myname/my_palladium_app:1.0
+  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:0.9.1 myname/my-palladium-app:1.0
 
 This command will in fact create two images: one that's called
-``my_palladium_app``, another one that's called
-``my_palladium_app_predict``.  The latter extends the former by adding
+``my-palladium-app``, another one that's called
+``my-palladium-app-predict``.  The latter extends the former by adding
 calls to automatically fit your model and start a web server.
 
 By default ``pld-dockerize`` will create the Dockerfile files *and*
@@ -178,10 +178,11 @@ To test your image you can:
 
 1) Create app images using ``pld-dockerize`` as shown above.
 
-2) Run the "predict" image (e.g. ``my_palladium_app_predict``), and
-   map the Docker container's port 8000 to a local port (e.g. 8001)::
+2) Run the "predict" image (e.g. ``my-palladium-app-predict`` if you
+   used ``my-palladium-app`` to create the image), and map the Docker
+   container's port 8000 to a local port (e.g. 8001)::
 
-     sudo docker run -d -p 8001:8000 my_palladium_app_predict
+     sudo docker run -d -p 8001:8000 my-palladium-app-predict
 
 3) Your application should be up and running now.  You should be able
    to access this URL:  http://localhost:8001/alive
