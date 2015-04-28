@@ -152,6 +152,11 @@ This command will in fact create two images: one that's called
 ``my_palladium_app_predict``.  The latter extends the former by adding
 calls to automatically fit your model and start a web server.
 
+By default ``pld-dockerize`` will create the Dockerfile files *and*
+create the Docker containers.  You may want to create the Dockerfile
+files only using the ``-d`` flag, and then modify files
+``Dockerfile-app`` and ``Dockerfile-predict`` according to your needs.
+
 Your application's folder (``examples/iris`` in this case) should look
 like this:
 

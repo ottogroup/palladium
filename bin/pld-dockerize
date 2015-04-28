@@ -4,11 +4,51 @@
 # Assumption: palladium_base image available
 ###############################################
 
+# Usage info
+usage() {
+cat << EOF
+Usage: ${0##*/} [-d] PATH_TO_APP BASE_IMAGE_NAME IMAGE_NAME
 
-# $1 = Path to your application, e.g. .../examples/iris/
-# $2 = Base image name, e.g. ottogroup/palladium_base:0.9.1
-# $3 = Image name, e.g. myname/my_palladium_app:1.0
+Create a Docker image for a Palladium application that lives in
+PATH_TO_APP.  BASE_IMAGE_NAME is the Docker image that we'll base our
+image on, while IMAGE_NAME is the name that you want to use for the
+Docker container that I'll create.
 
+Example values:
+  - PATH_TO_APP: .../examples/iris/
+  - BASE_IMAGE_NAME: ottogroup/palladium_base:0.9.1
+  - IMAGE_NAME: myname/my_palladium_app:1.0
+
+Options:
+    -h          display this help and exit
+    -d          create the Dockerfile files but do not build them
+EOF
+}
+
+# Initialize our own variables:
+dry_run=0
+
+OPTIND=1
+while getopts "hd" opt; do
+    case "$opt" in
+        h)
+            usage
+            exit 0
+            ;;
+        d)  dry_run=1
+            ;;
+        '?')
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+shift "$((OPTIND-1))" # Shift off the options and optional --.
+
+if [ "$3" = "" ]; then
+    usage >&2
+    exit 1
+fi
 
 # Copy files into same directory as Dockerfile 
 tar cvzf app.tar.gz --exclude .git --directory=$1 .
@@ -87,10 +127,11 @@ if [ -f $p\setup.py ]; then
 fi
 
 # Build image
-sudo docker build -f $FILE-app -t $3 . 
+if [ "$dry_run" -eq 0 ]; then
+    sudo docker build -f $FILE-app -t $3 .
+    rm app.tar.gz
+fi
 
-# Remove app folder
-rm app.tar.gz
 
 
 
@@ -100,7 +141,7 @@ rm app.tar.gz
 #########################################
 
 
-/bin/cat <<EOM >$FILE-gunicorn
+/bin/cat <<EOM >$FILE-predict
 ############################################################
 # Dockerfile to build palladium with gunicorn autostart
 # Based on $3
@@ -123,8 +164,9 @@ EXPOSE 8000
 
 EOM
 
-echo "CMD gunicorn --workers=3 -b" '$'"(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'):8000  palladium.server:app" >>$FILE-gunicorn
+echo "CMD gunicorn --workers=3 -b" '$'"(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'):8000  palladium.server:app" >>$FILE-predict
 
 # Build image
-sudo docker build -f $FILE-gunicorn -t ${3%%:*}_predict:${3##*:} .
-
+if [ "$dry_run" -eq 0 ]; then
+    sudo docker build -f $FILE-predict -t ${3%%:*}_predict:${3##*:} .;
+fi
