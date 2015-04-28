@@ -9,7 +9,7 @@ from functools import wraps
 import logging
 from logging.config import dictConfig
 from importlib import import_module
-from inspect import getfullargspec
+from inspect import signature
 from inspect import getcallargs
 import os
 import sys
@@ -134,17 +134,17 @@ def apply_kwargs(func, **kwargs):
     """Call *func* with kwargs, but only those kwargs that it accepts.
     """
     new_kwargs = {}
-    func_args = getfullargspec(func)[0]
-    for i, argname in enumerate(func_args):
-        if argname in kwargs:
-            new_kwargs[argname] = kwargs[argname]
+    params = signature(func).parameters
+    for param_name in params.keys():
+        if param_name in kwargs:
+            new_kwargs[param_name] = kwargs[param_name]
     return func(**new_kwargs)
 
 
 def args_from_config(func):
     """Decorator that injects parameters from the configuration.
     """
-    func_args = getfullargspec(func)[0]
+    func_args = signature(func).parameters
 
     @wraps(func)
     def wrapper(*args, **kwargs):
