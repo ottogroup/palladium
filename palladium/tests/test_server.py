@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import math
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -160,7 +161,7 @@ class TestPredictService:
 
     def test_probas(self, PredictService, flask_app):
         model = Mock()
-        model.predict_proba.return_value = np.array([[0.1, 0.5, 0.4]])
+        model.predict_proba.return_value = np.array([[0.1, 0.5, math.pi]])
         predict_service = PredictService(mapping=[], predict_proba=True)
         with flask_app.test_request_context():
             resp = predict_service(model, request)
@@ -171,7 +172,7 @@ class TestPredictService:
                 "status": "OK",
                 "error_code": 0,
                 },
-            "result": [0.1, 0.5, 0.4],
+            "result": [0.1, 0.5, math.pi],
             }
 
     def test_post_request(self, PredictService, flask_app):
