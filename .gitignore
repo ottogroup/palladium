@@ -1,6 +1,8 @@
 *.egg-info
 .coverage
+Dockerfile-*
 bin/
+!bin/pld-docker-app
 docs/modules/palladium.rst
 docs/modules/palladium.tests.rst
 examples/*/*db

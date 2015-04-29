@@ -58,7 +58,7 @@ class PredictService:
         :param mapping:
           A list of query parameters and their type that should be
           included in the request.  These will be processed in the
-          :meth:`sample_from_request` method to construct a sample
+          :meth:`sample_from_data` method to construct a sample
           that can be used for prediction.  An example that expects
           two request parameters called ``pos`` and ``neg`` that are
           both of type str::
@@ -90,27 +90,54 @@ class PredictService:
             return self.response_from_exception(e)
 
     def do(self, model, request):
-        """If you need complete control over what the `PredictService`
-        would do, you would want to override this method.
-        """
-        sample, kwargs = self.sample_from_request(model, request)
-        y_pred = self.predict(model, sample, **kwargs)
-        return self.response_from_prediction(y_pred)
+        if request.method == 'GET':
+            single = True
+            samples = np.array([self.sample_from_data(model, request.args)])
+        else:
+            single = False
+            samples = []
 
-    def sample_from_request(self, model, request):
+            for data in request.json:
+                samples.append(self.sample_from_data(model, data))
+            samples = np.array(samples)
+
+        params = self.params_from_request(model, request)
+        y_pred = self.predict(model, samples, **params)
+        return self.response_from_prediction(y_pred, single=single)
+
+    def sample_from_data(self, model, data):
+        """Convert incoming sample *data* into a numpy array.
+
+        :param model:
+          The :class:`~Model` instance to use for making predictions.
+        :param data:
+          A dict-like with the sample's data, typically retrieved from
+          ``request.args`` or similar.
+        """
         values = []
-        data = request.args
         for key, type_name in self.mapping:
             value_type = self.types[type_name]
             values.append(value_type(data[key]))
+        return np.array(values, dtype=object)
+
+    def params_from_request(self, model, request):
+        """Retrieve additional parameters (keyword arguments) for
+        ``model.predict`` from the request.
+
+        :param model:
+          The :class:`~Model` instance to use for making predictions.
+        :param request:
+          A werkzeug ``request`` object.
+        """
         params = {}
+        data = request.args
         for key, type_name in self.params:
             value_type = self.types[type_name]
             if key in data:
                 params[key] = value_type(data[key])
             elif hasattr(model, key):
                 params[key] = getattr(model, key)
-        return np.array([values], dtype=object), params
+        return params
 
     def predict(self, model, sample, **kwargs):
         if self.predict_proba:
@@ -118,10 +145,16 @@ class PredictService:
         else:
             return model.predict(sample, **kwargs)
 
-    def response_from_prediction(self, y_pred):
+    def response_from_prediction(self, y_pred, single=True):
+        """Turns a model's prediction in *y_pred* into a JSON
+        response.
+        """
+        result = y_pred.tolist()
+        if single:
+            result = result[0]
         response = {
             'metadata': get_metadata(),
-            'result': y_pred.tolist()[0],
+            'result': result,
             }
         return make_ujson_response(response, status_code=200)
 
@@ -154,7 +187,7 @@ class PredictService:
             }, status_code=500)
 
 
-@app.route('/predict')
+@app.route('/predict', methods=['GET', 'POST'])
 @PluggableDecorator('predict_decorators')
 @args_from_config
 def predict(model_persister, predict_service):

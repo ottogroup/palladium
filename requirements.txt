@@ -15,6 +15,7 @@ pytz==2015.2
 # rpy2==2.5.2
 scikit-learn==0.16.1
 scipy==0.15.1
+# singledispatch==3.4.0.3  # for Python 3.3
 six==1.9.0
 sqlalchemy==1.0.1
 ujson==1.33

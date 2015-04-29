@@ -9,14 +9,12 @@ FROM continuumio/miniconda3
 # File Author / Maintainer
 MAINTAINER Palladium 
 
-# copy palladium 
-ADD palladium.tar.gz /root/palladium
+RUN conda config --add channels https://conda.binstar.org/ottogroup \
+    && conda config --set ssl_verify false \
+    && conda update --yes conda
 
-RUN   conda config --add channels https://conda.binstar.org/asmeurer \
-      && conda config --add channels https://conda.binstar.org/menpo \
-      && conda config --set ssl_verify false   # please deactivate if not needed
+RUN wget --no-check-certificate https://raw.githubusercontent.com/ottogroup/palladium/0.9.1/requirements.txt
 
-RUN conda install --yes --file /root/palladium/requirements.txt
-   
-# Install palladium
-RUN cd root/palladium && python setup.py install
+RUN conda install --yes --file requirements.txt
+
+RUN conda install --no-deps palladium==0.9.1
