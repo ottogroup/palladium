@@ -101,7 +101,7 @@ class PredictService:
                 samples.append(self.sample_from_data(model, data))
             samples = np.array(samples)
 
-        params = self.params_from_request(model, request)
+        params = self.params_from_data(model, request.args)
         y_pred = self.predict(model, samples, **params)
         return self.response_from_prediction(y_pred, single=single)
 
@@ -120,17 +120,17 @@ class PredictService:
             values.append(value_type(data[key]))
         return np.array(values, dtype=object)
 
-    def params_from_request(self, model, request):
+    def params_from_data(self, model, data):
         """Retrieve additional parameters (keyword arguments) for
-        ``model.predict`` from the request.
+        ``model.predict`` from request *data*.
 
         :param model:
           The :class:`~Model` instance to use for making predictions.
-        :param request:
-          A werkzeug ``request`` object.
+        :param data:
+          A dict-like with the parameter data, typically retrieved
+          from ``request.args`` or similar.
         """
         params = {}
-        data = request.args
         for key, type_name in self.params:
             value_type = self.types[type_name]
             if key in data:
