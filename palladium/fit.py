@@ -20,7 +20,8 @@ from .util import timer
 @PluggableDecorator('fit_decorators')
 @args_from_config
 def fit(dataset_loader_train, model, model_persister, persist=True,
-        dataset_loader_test=None, evaluate=False, persist_if_better_than=None):
+        activate=True, dataset_loader_test=None, evaluate=False,
+        persist_if_better_than=None):
 
     if persist_if_better_than is not None:
         evaluate = True
@@ -60,6 +61,8 @@ def fit(dataset_loader_train, model, model_persister, persist=True,
             with timer(logger.info, "Writing model"):
                 version = model_persister.write(model)
             logger.info("Wrote model with version {}.".format(version))
+            if activate:
+                model_persister.activate(version)
 
     return model
 
@@ -74,6 +77,8 @@ Usage:
 Options:
   -n --no-save              Don't persist the fitted model to disk.
 
+  --no-activate             Don't activate the fitted model.
+
   --save-if-better-than=<k> Persist only if test score better than given
                             value.
 
@@ -84,6 +89,7 @@ Options:
 """
     arguments = docopt(__doc__, argv=argv)
     no_save = arguments['--no-save']
+    no_activate = arguments['--no-activate']
     save_if_better_than = arguments['--save-if-better-than']
     evaluate = arguments['--evaluate'] or bool(save_if_better_than)
     if save_if_better_than is not None:
@@ -91,9 +97,31 @@ Options:
     initialize_config(__mode__='fit')
     fit(
         persist=not no_save,
+        activate=not no_activate,
         evaluate=evaluate,
         persist_if_better_than=save_if_better_than,
         )
+
+
+@args_from_config
+def activate(model_persister, model_version):
+    model_persister.activate(model_version)
+    logger.info("Activated model with version {}.".format(model_version))
+
+
+def activate_cmd(argv=sys.argv[1:]):  # pragma: no cover
+    __doc__ = """
+Activate the model with the given version.
+
+Usage:
+  pld-activate <version> [options]
+
+Options:
+  -h --help                 Show this screen.
+"""
+    arguments = docopt(__doc__, argv=argv)
+    initialize_config(__mode__='fit')
+    activate(model_version=int(arguments['<version>']))
 
 
 @args_from_config

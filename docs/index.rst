@@ -68,6 +68,7 @@ application.
   user/installation
   user/tutorial
   user/deployment
+  user/upgrading
   user/web-service
   user/R
   user/julia

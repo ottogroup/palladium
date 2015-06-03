@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+from unittest.mock import call
 from unittest.mock import patch
 
 import pytest
@@ -42,7 +43,9 @@ class TestList:
 
     def test(self, list):
         model_persister = Mock()
-        model_persister.list.return_value = [{1: 2}]
+        model_persister.list_models.return_value = [{1: 2}]
+        model_persister.list_properties.return_value = {5: 6}
         with patch('palladium.eval.pprint') as pprint:
             list(model_persister)
-        pprint.assert_called_with([{1: 2}])
+        assert pprint.mock_calls[0] == call([{1: 2}])
+        assert pprint.mock_calls[1] == call({5: 6})

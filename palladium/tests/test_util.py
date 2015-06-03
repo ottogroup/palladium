@@ -345,6 +345,29 @@ class TestRruleThread:
         assert rr.between.call_count > 1
 
 
+class TestUpgrade:
+    @pytest.fixture
+    def upgrade(self):
+        from palladium.util import upgrade
+        return upgrade
+
+    def test_no_args(self, upgrade):
+        persister = Mock()
+        upgrade(persister)
+        persister.upgrade.assert_called_with(from_version=None)
+
+    def test_from_version(self, upgrade):
+        persister = Mock()
+        upgrade(persister, from_version='0.1')
+        persister.upgrade.assert_called_with(from_version='0.1')
+
+    def test_from_version_and_to_version(self, upgrade):
+        persister = Mock()
+        upgrade(persister, from_version='0.1', to_version='0.2')
+        persister.upgrade.assert_called_with(from_version='0.1',
+                                             to_version='0.2')
+
+
 def dec1(func):
     def inner(a, b):
         """dec1"""
