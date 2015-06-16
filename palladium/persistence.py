@@ -11,6 +11,7 @@ from pkg_resources import parse_version
 from threading import Lock
 
 from sqlalchemy import create_engine
+from sqlalchemy import CLOB
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
@@ -359,12 +360,12 @@ class Database(ModelPersister):
 class DatabaseCLOB(Database):
     """A :class:`~palladium.interfaces.ModelPersister` derived from
     :class:`Database`, with only the slight difference of using
-    VARCHAR instead of BLOB to store the pickle data.
+    CLOB instead of BLOB to store the pickle data.
 
     Use when BLOB is not available.
     """
     class BytesToBase64Type(TypeDecorator):
-        impl = STRINGTYPE
+        impl = CLOB
 
         def process_bind_param(self, value, dialect):
             if value is not None:
@@ -382,8 +383,7 @@ class DatabaseCLOB(Database):
             id = Column(Integer, primary_key=True)
             model_version = Column(
                 ForeignKey('{}.version'.format(self._table_postfix('models'))))
-            blob = Column(self.BytesToBase64Type(
-                String(length=10 ** 6 * 2)), nullable=False)
+            blob = Column(self.BytesToBase64Type(String()), nullable=False)
         return DBModelChunk
 
 
