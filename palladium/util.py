@@ -297,6 +297,36 @@ Options:
     print(__version__)
 
 
+@args_from_config
+def upgrade(model_persister, from_version=None, to_version=None):
+    kwargs = {'from_version': from_version}
+    if to_version is not None:
+        kwargs['to_version'] = to_version
+    model_persister.upgrade(**kwargs)
+
+
+def upgrade_cmd(argv=sys.argv[1:]):  # pragma: no cover
+    __doc__ = """
+Upgrade the database to the latest version.
+
+Usage:
+  pld-ugprade [options]
+
+Options:
+
+  --from=<v>               Upgrade from a specific version, overriding
+                           the version stored in the database.
+
+  --to=<v>                 Upgrade to a specific version instead of the
+                           latest version ({version}).
+
+  -h --help                Show this screen.
+""".format(version=__version__)
+    arguments = docopt(__doc__, argv=argv)
+    initialize_config(__mode__='fit')
+    upgrade(from_version=arguments['--from'], to_version=arguments['--to'])
+
+
 class PluggableDecorator:
     def __init__(self, decorator_config_name):
         self.decorator_config_name = decorator_config_name

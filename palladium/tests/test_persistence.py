@@ -19,21 +19,62 @@ class Dummy:
         return vars(self) == vars(other)
 
 
+class TestUpgradeSteps:
+    @pytest.fixture
+    def steps(self):
+        from palladium.persistence import UpgradeSteps
+        return UpgradeSteps()
+
+    @pytest.fixture
+    def three_steps(self, steps):
+        step1, step2, step3 = Mock(), Mock(), Mock()
+        steps.add('0.1')(step1)
+        steps.add('0.2')(step2)
+        steps.add('0.3')(step3)
+        return step1, step2, step3, steps
+
+    def test_empty(self, steps):
+        results = steps.run(None, '0.1', '1.0')
+        assert results == []
+
+    def test_three_steps_overlap(self, three_steps):
+        step1, step2, step3, steps = three_steps
+        persister = Mock()
+        results = steps.run(persister, '0.1', '0.3')
+        assert len(results) == 2
+        assert results == [step2.return_value, step3.return_value]
+        step2.assert_called_with(persister)
+        step3.assert_called_with(persister)
+        assert step1.call_count == 0
+
+    def test_three_steps_no_overlap(self, three_steps):
+        step1, step2, step3, steps = three_steps
+        persister = Mock()
+        results = steps.run(persister, '0.3', '1.0')
+        assert results == []
+
+
 class TestFile:
     @pytest.fixture
-    def File(self):
+    def File(self, monkeypatch):
         from palladium.persistence import File
+        File._update_md_orig = File._update_md
+        monkeypatch.setattr(File, '_update_md', Mock())
         return File
 
     def test_init_path_without_version(self, File):
         with pytest.raises(ValueError):
-            filepersister = File('path_without')
+            File('path_without')
 
     def test_read(self, File):
-        with patch('palladium.persistence.File.list') as list,\
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File.list_properties') as lp,\
+            patch('palladium.persistence.os.path.exists') as exists,\
             patch('palladium.persistence.gzip.open') as open,\
             patch('palladium.persistence.pickle.load') as load:
-            list.return_value = [{'version': 99}]
+            lm.return_value = [{'version': 99}]
+            lp.return_value = {'active-model': '99'}
+            exists.return_value = True
             open.return_value = MagicMock()
             result = File('/models/model-{version}').read()
             open.assert_called_with('/models/model-99.pkl.gz', 'rb')
@@ -41,10 +82,12 @@ class TestFile:
             load.assert_called_with(open.return_value.__enter__.return_value)
 
     def test_read_with_version(self, File):
-        with patch('palladium.persistence.File.list') as list,\
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.os.path.exists') as exists,\
             patch('palladium.persistence.gzip.open') as open,\
             patch('palladium.persistence.pickle.load') as load:
-            list.return_value = [{'version': 99}]
+            lm.return_value = [{'version': 99}]
+            exists.return_value = True
             open.return_value = MagicMock()
             result = File('/models/model-{version}').read(432)
             open.assert_called_with('/models/model-432.pkl.gz', 'rb')
@@ -52,25 +95,36 @@ class TestFile:
             load.assert_called_with(open.return_value.__enter__.return_value)
 
     def test_read_no_model(self, File):
-        with patch('palladium.persistence.File.list') as list:
-            list.return_value = []
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File.list_properties') as lp:
+            lp.return_value = {}
+            lm.return_value = []
             f = File('/models/model-{version}')
-            with pytest.raises(IOError):
+            with pytest.raises(LookupError):
+                f.read()
+
+    def test_read_no_active_model(self, File):
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File.list_properties') as lp:
+            lp.return_value = {}
+            lm.return_value = [{'version': 99}]
+            f = File('/models/model-{version}')
+            with pytest.raises(LookupError):
                 f.read()
 
     def test_read_no_model_with_given_version(self, File):
-        with patch('palladium.persistence.File.list') as list:
-            list.return_value = []
+        with patch('palladium.persistence.os.path.exists') as exists:
+            exists.return_value = False
             f = File('/models/model-{version}')
-            with pytest.raises(IOError):
+            with pytest.raises(LookupError):
                 f.read(1)
 
     def test_write_no_model_files(self, File):
-        with patch('palladium.persistence.File.list') as list,\
-            patch('palladium.persistence.File._write_md') as write_md,\
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File._update_md') as update_md,\
             patch('palladium.persistence.gzip.open') as open,\
             patch('palladium.persistence.pickle.dump') as dump:
-            list.return_value = []
+            lm.return_value = []
             open.return_value = MagicMock()
             model = MagicMock()
             result = File('/models/model-{version}').write(model)
@@ -79,15 +133,15 @@ class TestFile:
                 model,
                 open.return_value.__enter__.return_value,
                 )
-            write_md.assert_called_with([model.__metadata__])
+            update_md.assert_called_with({'models': [model.__metadata__]})
             assert result == 1
 
     def test_write_with_model_files(self, File):
-        with patch('palladium.persistence.File.list') as list,\
-            patch('palladium.persistence.File._write_md') as write_md,\
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File._update_md') as update_md,\
             patch('palladium.persistence.gzip.open') as open,\
             patch('palladium.persistence.pickle.dump') as dump:
-            list.return_value = [{'version': 99}]
+            lm.return_value = [{'version': 99}]
             open.return_value = MagicMock()
             model = MagicMock()
             result = File('/models/model-{version}').write(model)
@@ -96,57 +150,188 @@ class TestFile:
                 model,
                 open.return_value.__enter__.return_value,
                 )
-            write_md.assert_called_with([
-                {'version': 99},
-                model.__metadata__,
-                ])
+            update_md.assert_called_with(
+                {'models': [{'version': 99}, model.__metadata__]})
             assert result == 100
 
     def test_update_metadata(self, File):
         model = MagicMock(__metadata__={
             'existing': 'entry', 'version': 'overwritten'})
 
-        with patch('palladium.persistence.File.list') as list,\
-            patch('palladium.persistence.File._write_md') as write_md,\
+        with patch('palladium.persistence.File.list_models') as lm,\
+            patch('palladium.persistence.File._update_md') as update_md,\
             patch('palladium.persistence.gzip.open'),\
             patch('palladium.persistence.pickle.dump'):
-            list.return_value = [{'version': 99}]
+            lm.return_value = [{'version': 99}]
             File('/models/model-{version}').write(model)
             assert model.__metadata__ == {
                 'existing': 'entry',
                 'version': 100,
                 }
-            write_md.assert_called_with([
-                {'version': 99},
-                model.__metadata__,
-                ])
+            update_md.assert_called_with(
+                {'models': [{'version': 99}, model.__metadata__]})
 
-    def test_list_no_metadata(self, File):
+    def test_list_models_no_metadata(self, File):
         with patch('palladium.persistence.os.path.exists') as exists:
             exists.return_value = False
-            assert File('model-{version}').list() == []
+            assert File('model-{version}').list_models() == []
             exists.assert_called_with('model-metadata.json')
 
-    def test_list_with_metadata(self, File):
-        with patch('palladium.persistence.os.path.exists') as exists,\
-            patch('builtins.open') as open,\
-            patch('palladium.persistence.json.load') as load:
-            exists.return_value = True
-            assert File('model-{version}').list() == load.return_value
-            exists.assert_called_with('model-metadata.json')
-            open.assert_called_with('model-metadata.json', 'r')
+    def test_list_models_with_metadata(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md:
+            read_md.return_value = {'models': [{'version': 99}]}
+            assert File('model-{version}').list_models() == [{'version': 99}]
 
-    def test_write_md(self, File):
-        with patch('builtins.open') as open,\
-            patch('palladium.persistence.json.dump') as dump:
-            md = [{'hello': 'world'}]
-            File('model-{version}')._write_md(md)
+    def test_list_properties_no_metadata(self, File):
+        from palladium import __version__
+        with patch('palladium.persistence.os.path.exists') as exists:
+            exists.return_value = False
+            assert File('model-{version}').list_properties() == {
+                'db-version': __version__,
+                }
+            exists.assert_called_with('model-metadata.json')
+
+    def test_list_properties_with_metadata(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md:
+            read_md.return_value = {
+                'properties': {
+                    'active-model': '33',
+                    'hello': 'world',
+                    },
+                }
+            assert File('model-{version}').list_properties() == {
+                'active-model': '33', 'hello': 'world',
+                }
+
+    def test_update_md(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+            patch('palladium.persistence.json.dump') as dump,\
+            patch('builtins.open') as open:
+            read_md.return_value = {
+                'hello': 'world',
+                'models': [1],
+                'properties': {},
+                }
+            File('model-{version}')._update_md_orig({'models': [2]})
             open.assert_called_with('model-metadata.json', 'w')
             dump.assert_called_with(
-                md,
+                {'hello': 'world', 'models': [2], 'properties': {}},
                 open.return_value.__enter__.return_value,
                 indent=4,
                 )
+
+    def test_read_md(self, File):
+        with patch('builtins.open') as open,\
+             patch('palladium.persistence.os.path.exists') as exists,\
+             patch('palladium.persistence.json.load') as load:
+            exists.return_value = True
+            result = File('model-{version}')._read_md()
+            exists.assert_called_with('model-metadata.json')
+            open.assert_called_with('model-metadata.json', 'r')
+            load.assert_called_with(
+                open.return_value.__enter__.return_value,
+                )
+            assert result == load.return_value
+
+    def test_read_md_no_file(self, File):
+        from palladium import __version__
+        with patch('palladium.persistence.os.path.exists') as exists:
+            exists.return_value = False
+            assert File('model-{version}')._read_md() == {
+                'models': [],
+                'properties': {'db-version': __version__},
+                }
+
+    def test_activate(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+             patch('palladium.persistence.File._update_md') as update_md:
+            read_md.return_value = {
+                'models': [{'version': 1}, {'version': 2}],
+                'properties': {'active-model': '2'},
+                }
+            File('model-{version}').activate(1)
+            update_md.assert_called_with({
+                'properties': {'active-model': '1'},
+                })
+
+    def test_activate_bad_version(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+             patch('palladium.persistence.File._update_md') as update_md:
+            read_md.return_value = {
+                'models': [{'version': 1}, {'version': 2}],
+                'properties': {'active-model': '2'},
+                }
+            with pytest.raises(LookupError):
+                File('model-{version}').activate(3)
+
+    def test_upgrade_no_args(self, File):
+        from palladium import __version__
+
+        persister = File('model-{version}')
+        with patch.object(File, '_read_md',
+                          return_value={'properties': {'db-version': '0.33'}}):
+            with patch.object(File, 'upgrade_steps') as upgrade_steps:
+                persister.upgrade()
+        upgrade_steps.run.assert_called_with(persister, '0.33', __version__)
+        assert persister.list_properties()['db-version'] == __version__
+
+    def test_upgrade_with_legacy_md(self, File):
+        from palladium import __version__
+
+        persister = File('model-{version}')
+        legacy_md = [{'some': 'model'}]
+        with patch.object(File, '_read_md',
+                          side_effect=[legacy_md, {'properties': {}}]):
+            with patch.object(File, 'upgrade_steps') as upgrade_steps:
+                persister.upgrade()
+        upgrade_steps.run.assert_called_with(persister, '0.0', __version__)
+        assert persister.list_properties()['db-version'] == __version__
+
+    def test_upgrade_from_version(self, File):
+        from palladium import __version__
+
+        persister = File('model-{version}')
+        with patch.object(File, 'upgrade_steps') as upgrade_steps:
+            persister.upgrade(from_version='0.34')
+        upgrade_steps.run.assert_called_with(persister, '0.34', __version__)
+        assert persister.list_properties()['db-version'] == __version__
+
+    def test_upgrade_1_0(self, File):
+        with patch('builtins.open') as open,\
+            patch('palladium.persistence.os.path.exists') as exists,\
+            patch('palladium.persistence.json.load') as load,\
+            patch('palladium.persistence.json.dump') as dump:
+
+            exists.return_value = True
+            load.side_effect = [
+                [{'version': '1'}, {'version': '2'}],
+                {'properties': {}},
+                ]
+            File('model-{version}').upgrade(
+                from_version="0.0", to_version="1.0")
+            exists.assert_called_with('model-metadata.json')
+            open_rv = open.return_value.__enter__.return_value
+            load.assert_called_with(open_rv)
+            new_md = {
+                'models': [{'version': '1'}, {'version': '2'}],
+                'properties': {
+                    'active-model': '2',
+                    },
+                }
+            dump.assert_called_with(new_md, open_rv, indent=4)
+
+    def test_upgrade_1_0_no_metadata(self, File):
+        with patch('builtins.open') as open,\
+            patch('palladium.persistence.os.path.exists') as exists,\
+            patch('palladium.persistence.json.dump') as dump:
+
+            exists.return_value = False
+            File('model-{version}').upgrade(
+                from_version="0.0", to_version="1.0")
+            exists.assert_called_with('model-metadata.json')
+            open_rv = open.return_value.__enter__.return_value
+            new_md = {'models': [], 'properties': {}}
+            dump.assert_called_with(new_md, open_rv, indent=4)
 
 
 class TestDatabase:
@@ -192,28 +377,47 @@ class TestDatabase:
 
         return model
 
-    def test_read_no_entry(self, database):
-        with pytest.raises(IOError):
+    def test_initialize_properties(self, database):
+        from palladium import __version__
+        assert database.list_properties() == {'db-version': __version__}
+
+    def test_read(self, database, dbmodel):
+        database.write(Dummy(name='mymodel'))
+        database.activate(1)
+        assert database.read() == dbmodel
+
+    def test_read_with_version(self, database, dbmodel):
+        database.write(Dummy(name='mymodel'))
+        assert database.read(1) == dbmodel
+
+    def test_read_no_model(self, database):
+        with pytest.raises(LookupError):
             database.read()
 
-    def test_read_with_existing_entry(self, database, dbmodel):
-        model = database.read()
-        assert model == dbmodel
+    def test_read_no_active_model(self, database, dbmodel):
+        with pytest.raises(LookupError):
+            database.read()
+
+    def test_activate(self, database, dbmodel):
+        assert 'active-model' not in database.list_properties()
+        database.activate(1)
+        assert database.list_properties()['active-model'] == '1'
 
     def test_write_no_entry(self, database):
         model = Dummy(name='mymodel')
-        database.write(model)
+        database.activate(database.write(model))
         assert database.read() == model
         assert model.__metadata__['version'] == 1
 
     def test_write_with_existing_entry(self, database, dbmodel):
         model = Dummy(name='mymodel')
-        database.write(model)
+        database.activate(database.write(model))
         assert database.read() == model
         assert model.__metadata__['version'] == 2
         assert database.read(1) == dbmodel
 
     def test_concurrent_read_write(self, database, dbmodel):
+        database.activate(1)
         model = Dummy(name='mymodel')
 
         _read_success = True
@@ -229,7 +433,8 @@ class TestDatabase:
         def write():
             nonlocal _write_success
             try:
-                database.write(model)
+                version = database.write(model)
+                database.activate(version)
             except:
                 _write_success = False
                 raise
@@ -247,18 +452,48 @@ class TestDatabase:
         assert _read_success
         assert _write_success
 
-    def test_list_no_entries(self, database):
-        assert database.list() == []
+    def test_list_models_no_entries(self, database):
+        assert database.list_models() == []
 
-    def test_list_with_existing_entry(self, database, dbmodel):
-        listing = database.list()
+    def test_list_models_with_existing_entry(self, database, dbmodel):
+        listing = database.list_models()
         assert listing == [dbmodel.__metadata__]
 
-    def test_list_with_two_entries(self, database, dbmodel):
+    def test_list_models_with_two_entries(self, database, dbmodel):
         model2 = Dummy(name='mymodel')
         database.write(model2)
-        listing = database.list()
+        listing = database.list_models()
         assert listing == [dbmodel.__metadata__, model2.__metadata__]
+
+    def test_upgrade_no_args(self, database):
+        from palladium import __version__
+
+        with patch.object(database, 'list_properties',
+                          return_value={'db-version': '0.33'}):
+            with patch.object(database, 'upgrade_steps') as upgrade_steps:
+                database.upgrade()
+        upgrade_steps.run.assert_called_with(database, '0.33', __version__)
+        assert database.list_properties()['db-version'] == __version__
+
+    def test_upgrade_from_version(self, database):
+        from palladium import __version__
+
+        with patch.object(database, 'upgrade_steps') as upgrade_steps:
+            database.upgrade(from_version='0.34')
+        upgrade_steps.run.assert_called_with(database, '0.34', __version__)
+        assert database.list_properties()['db-version'] == __version__
+
+    def test_upgrade_1_0(self, database, dbmodel):
+        from palladium import __version__
+
+        model2 = Dummy(name='mymodel')
+        database.write(model2)
+        assert database.list_properties() == {
+            'db-version': __version__}
+        database.upgrade(from_version='0.0', to_version='1.0')
+        assert database.list_properties() == {
+            'db-version': '1.0', 'active-model': '2'}
+
 
 class TestCachedUpdatePersister:
     @pytest.fixture
@@ -317,7 +552,24 @@ class TestCachedUpdatePersister:
         assert len(process_store) == 0
         assert persister.thread is None
 
-    def test_list(self, CachedUpdatePersister):
+    def test_proxy_list_models(self, CachedUpdatePersister):
         impl = Mock()
         persister = CachedUpdatePersister(impl)
-        persister.list() is impl.load.return_value
+        assert persister.list_models() is impl.list_models.return_value
+
+    def test_proxy_list_properties(self, CachedUpdatePersister):
+        impl = Mock()
+        persister = CachedUpdatePersister(impl)
+        assert persister.list_properties() is impl.list_properties.return_value
+
+    def test_proxy_activate(self, CachedUpdatePersister):
+        impl = Mock()
+        persister = CachedUpdatePersister(impl)
+        assert persister.activate(2) is impl.activate.return_value
+        impl.activate.assert_called_with(2)
+
+    def test_proxy_upgrade(self, CachedUpdatePersister):
+        impl = Mock()
+        persister = CachedUpdatePersister(impl)
+        assert persister.upgrade("0.9", "1.0") is impl.upgrade.return_value
+        impl.upgrade.assert_called_with("0.9", "1.0")

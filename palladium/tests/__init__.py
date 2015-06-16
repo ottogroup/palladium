@@ -56,6 +56,7 @@ def run_smoke_tests_with_config(config_fname, run=None, raise_errors=True,
 
     with patch.dict('os.environ', {'PALLADIUM_CONFIG': config_fname}):
         from palladium.fit import fit
+        from palladium.fit import activate
         from palladium.fit import grid_search
         from palladium.eval import test
         from palladium.util import initialize_config
@@ -64,7 +65,7 @@ def run_smoke_tests_with_config(config_fname, run=None, raise_errors=True,
 
         with change_cwd(os.path.dirname(config_fname)):
             initialize_config(__mode__='fit')
-            for func in (fit, grid_search, test, predict):
+            for func in (fit, activate, grid_search, test, predict):
                 if run and func.__name__ not in run:
                     continue
                 try:

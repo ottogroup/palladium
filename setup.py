@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = '0.10.dev1'
+version = '1.0.dev1'
 
 install_requires = [
     'docopt',
@@ -62,11 +62,13 @@ setup(name='palladium',
           },
       entry_points={
           'console_scripts': [
+              'pld-activate = palladium.fit:activate_cmd',
               'pld-devserver = palladium.server:devserver_cmd',
               'pld-fit = palladium.fit:fit_cmd',
               'pld-grid-search = palladium.fit:grid_search_cmd',
               'pld-list = palladium.eval:list_cmd',
               'pld-test = palladium.eval:test_cmd',
+              'pld-upgrade = palladium.util:upgrade_cmd',
               'pld-version = palladium.util:version_cmd',
               ],
           'pytest11': [

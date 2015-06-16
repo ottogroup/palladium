@@ -6,7 +6,7 @@ import io
 import json
 import os
 import pickle
-import re
+from pkg_resources import parse_version
 from threading import Lock
 
 from sqlalchemy import create_engine
@@ -20,6 +20,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
+from . import __version__
 from .interfaces import annotate
 from .interfaces import ModelPersister
 from .util import logger
@@ -32,10 +33,31 @@ from .util import session_scope
 Base = declarative_base()
 
 
+class UpgradeSteps:
+    def __init__(self):
+        self.steps = []
+
+    def add(self, version):
+        def decorator(func):
+            self.steps.append((parse_version(version), func))
+            return func
+        return decorator
+
+    def run(self, persister, from_version, to_version):
+        from_version = parse_version(from_version)
+        to_version = parse_version(to_version)
+        results = []
+        for version, func in sorted(self.steps):
+            if from_version < version <= to_version:
+                results.append(func(persister))
+        return results
+
+
 class File(ModelPersister):
     """A :class:`~palladium.interfaces.ModelPersister` that pickles models
     onto the file system, into a given directory.
     """
+    upgrade_steps = UpgradeSteps()
 
     def __init__(self, path):
         """
@@ -43,7 +65,7 @@ class File(ModelPersister):
           The *path* template that I will use to store models,
           e.g. ``/path/to/model-{version}``.
         """
-        if path.find('{version}') < 0:
+        if '{version}' not in path:
             raise ValueError(
                 "Your file persister path must have a {version} placeholder,"
                 "e.g., model-{version}.pickle."
@@ -52,18 +74,20 @@ class File(ModelPersister):
 
     def read(self, version=None):
         if version is None:
-            li = self.list()
-            if not li:
-                raise IOError("No model available")
-            version = li[-1]['version']
+            props = self.list_properties()
+            if 'active-model' not in props:
+                raise LookupError("No active model available")
+            version = props['active-model']
 
         fname = self.path.format(version=version) + '.pkl.gz'
+        if not os.path.exists(fname):
+            raise LookupError("No such version: {}".format(version))
         with gzip.open(fname, 'rb') as f:
             return pickle.load(f)
 
     def write(self, model):
         last_version = 0
-        li = self.list()
+        li = self.list_models()
         if li:
             last_version = li[-1]['version']
 
@@ -74,21 +98,69 @@ class File(ModelPersister):
         with gzip.open(fname, 'wb') as f:
             pickle.dump(model, f)
 
-        self._write_md(li)
+        self._update_md({'models': li})
         return version
 
-    def list(self):
-        fname = self.path.format(version='metadata') + '.json'
-        if os.path.exists(fname):
-            with open(fname, 'r') as f:
-                return json.load(f)
-        else:
-            return []
+    def list_models(self):
+        return self._read_md()['models']
 
-    def _write_md(self, li):
-        fname = self.path.format(version='metadata') + '.json'
-        with open(fname, 'w') as f:
-            json.dump(li, f, indent=4)
+    def list_properties(self):
+        return self._read_md()['properties']
+
+    def activate(self, version):
+        md = self._read_md()
+        md['properties']['active-model'] = str(version)
+        versions = [m['version'] for m in md['models']]
+        if int(version) not in versions:
+            raise LookupError(version)
+        self._update_md({'properties': md['properties']})
+
+    @property
+    def _md_filename(self):
+        return self.path.format(version='metadata') + '.json'
+
+    def _read_md(self):
+        if os.path.exists(self._md_filename):
+            with open(self._md_filename, 'r') as f:
+                return json.load(f)
+        return {'models': [], 'properties': {'db-version': __version__}}
+
+    def _update_md(self, data):
+        data2 = self._read_md()
+        data2.update(data)
+        with open(self._md_filename, 'w') as f:
+            json.dump(data2, f, indent=4)
+
+    def upgrade(self, from_version=None, to_version=__version__):
+        if from_version is None:
+            try:
+                from_version = self._read_md()['properties']['db-version']
+            except (KeyError, TypeError):
+                from_version = "0.0"
+
+        self.upgrade_steps.run(self, from_version, to_version)
+        md = self._read_md()
+        md['properties']['db-version'] = to_version
+        self._update_md(md)
+
+    @upgrade_steps.add('1.0')
+    def _upgrade_1_0(self):
+        if os.path.exists(self._md_filename):
+            with open(self._md_filename, 'r') as f:
+                old_md = json.load(f)
+        else:
+            old_md = None
+
+        active_model = old_md[-1]['version'] if old_md else None
+        new_md = {
+            'models': old_md or [],
+            'properties': {},
+            }
+        if active_model is not None:
+            new_md['properties']['active-model'] = str(active_model)
+
+        with open(self._md_filename, 'w') as f:
+            json.dump(new_md, f, indent=4)
 
 
 class Database(ModelPersister):
@@ -97,6 +169,12 @@ class Database(ModelPersister):
     """
 
     write_lock = Lock()
+    upgrade_steps = UpgradeSteps()
+
+    class Property(Base):
+        __tablename__ = 'properties'
+        name = Column(String(length=10 ** 3), primary_key=True)
+        value = Column(String(length=10 ** 3), nullable=False)
 
     class DBModel(Base):
         __tablename__ = 'models'
@@ -132,14 +210,19 @@ class Database(ModelPersister):
         metadata.create_all()
         self.session = scoped_session(sessionmaker(bind=engine))
         self.chunk_size = chunk_size
+        self._initialize_properties()
+
+    def _initialize_properties(self):
+        with session_scope(self.session) as session:
+            if session.query(self.Property).count() == 0:
+                self._set_property('db-version', __version__)
 
     def read(self, version=None):
         with session_scope(self.session) as session:
             query = session.query(self.DBModel)
             if not version:
-                dbmodel = query.order_by(self.DBModel.version.desc()).first()
-            else:
-                dbmodel = query.filter_by(version=version).first()
+                version = self._active_version
+            dbmodel = query.filter_by(version=version).first()
 
             if dbmodel is not None:
                 query2 = session.query(self.DBModelChunk).filter_by(
@@ -151,14 +234,14 @@ class Database(ModelPersister):
                 fileobj.seek(0)
                 return pickle.load(gzip.GzipFile(fileobj=fileobj, mode='rb'))
 
-        raise IOError("No model available")
+        raise LookupError("No model available")
 
     def write(self, model):
         with self.write_lock:
             return self._write(model)
 
     def _write(self, model):
-        max_version = self.get_max_version()
+        max_version = self._get_max_version()
         if not max_version:
             max_version = 0
         version = max_version + 1
@@ -182,13 +265,7 @@ class Database(ModelPersister):
 
         return version
 
-    def list(self):
-        with session_scope(self.session) as session:
-            results = session.query(self.DBModel.metadata_).all()
-        infos = [json.loads(res[0]) for res in results]
-        return sorted(infos, key=lambda x: x['version'])
-
-    def get_max_version(self):
+    def _get_max_version(self):
         # We retrieve the max version by hand instead of using an
         # auto-increment because we want to annotate the version
         # number onto the model's metadata.
@@ -198,6 +275,51 @@ class Database(ModelPersister):
 
         if result is not None:
             return result[0]
+
+    def list_models(self):
+        with session_scope(self.session) as session:
+            results = session.query(self.DBModel.metadata_).all()
+        infos = [json.loads(res[0]) for res in results]
+        return sorted(infos, key=lambda x: x['version'])
+
+    def list_properties(self):
+        with session_scope(self.session) as session:
+            return {prop.name: prop.value
+                    for prop in session.query(self.Property)}
+
+    def activate(self, version):
+        self._set_property('active-model', str(version))
+
+    @property
+    def _active_version(self):
+        with session_scope(self.session) as session:
+            active_model = session.query(self.Property).filter_by(
+                name='active-model').first()
+            if active_model is not None:
+                return int(active_model.value)
+
+    def _set_property(self, name, value):
+        with session_scope(self.session) as session:
+            prop = session.query(self.Property).filter_by(name=name).first()
+            if prop is None:
+                session.add(self.Property(name=name, value=str(value)))
+            else:
+                prop.value = str(value)
+                session.add(prop)
+
+    def upgrade(self, from_version=None, to_version=__version__):
+        if from_version is None:
+            from_version = self.list_properties().get('db-version', '0.0')
+
+        self.upgrade_steps.run(self, from_version, to_version)
+        self._set_property('db-version', to_version)
+
+    @upgrade_steps.add('1.0')
+    def _upgrade_1_0(self):
+        if self.list_properties().get('active-model') is None:
+            models = self.list_models()
+            if models:
+                self.activate(int(models[-1]['version']))
 
 
 class CachedUpdatePersister(ModelPersister):
@@ -274,5 +396,14 @@ class CachedUpdatePersister(ModelPersister):
     def write(self, model):
         return self.impl.write(model)
 
-    def list(self):
-        return self.impl.list()
+    def list_models(self):
+        return self.impl.list_models()
+
+    def list_properties(self):
+        return self.impl.list_properties()
+
+    def activate(self, version):
+        return self.impl.activate(version)
+
+    def upgrade(self, from_version=None, to_version=__version__):
+        return self.impl.upgrade(from_version, to_version)

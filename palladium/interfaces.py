@@ -6,6 +6,8 @@ from abc import ABCMeta
 
 from sklearn.base import BaseEstimator
 
+from . import __version__
+
 
 def annotate(obj, metadata=None):
     base_metadata = getattr(obj, '__metadata__', {})
@@ -119,13 +121,13 @@ class ModelPersister(metaclass=ABCMeta):
 
         :param str version:
           *version* may be used to read a specific version of a model.
-          If *version* is ``None``, returns the latest model.
+          If *version* is ``None``, returns the active model.
 
         :return:
           The model object.
 
         :raises:
-          IOError if no model was available.
+          LookupError if no model was available.
         """
 
     @abstractmethod
@@ -134,18 +136,62 @@ class ModelPersister(metaclass=ABCMeta):
 
         It is the :class:`ModelPersister`'s responsibility to annotate
         the 'version' information onto the model before it is saved.
+
+        The new model will initially be inactive.  Use
+        :meth:`ModelPersister.activate` to activate the model.
+
+        :return:
+          The new model's version identifier.
         """
 
     @abstractmethod
-    def list(self):
+    def activate(self, version):
+        """Set the model with the given *version* to be the active
+        one.
+
+        Implies that any previously active model becomes inactive.
+
+        :param str version:
+          The *version* of the model that's activated.
+
+        :raises:
+          LookupError if no model with given *version* exists.
+        """
+
+    @abstractmethod
+    def list_models(self):
         """List metadata of all available models.
 
         :return:
           A list of dicts, with each dict containing information about
           one of the available models.  Each dict is guaranteed to
           contain the ``version`` key, which is the same version
-          number that :meth:`ModelPerister.read` accepts for loading
+          number that :meth:`ModelPersister.read` accepts for loading
           specific models.
+        """
+
+    @abstractmethod
+    def list_properties(self):
+        """List properties of :class:`ModelPersister` itself.
+
+        :return:
+          A dictionary of key and value pairs, where both keys and
+          values are of type ``str``.  Properties will usually include
+          ``active-model`` and ``db-version`` entries.
+        """
+
+    @abstractmethod
+    def upgrade(self, from_version=None, to_version=__version__):
+        """Upgrade the underlying database to the latest version.
+
+        Newer versions of Palladium may require changes to the
+        :class:`ModelPersister`'s database.  This method provides an
+        opportunity to run the necessary upgrade steps.
+
+        It's the :class:`ModelPersister`'s responsibility to keep
+        track of the Palladium version that was used to create and
+        upgrade its database, and thus to determine the upgrade steps
+        necessary.
         """
 
 
@@ -160,6 +206,7 @@ class PredictService(metaclass=ABCMeta):
 
         :param model:
           The :class:`~Model` instance to use for making predictions.
+
         :param request:
           A werkzeug ``request`` object.  A dictionary with query
           parameters is available at *request.values*.

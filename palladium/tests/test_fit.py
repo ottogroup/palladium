@@ -32,6 +32,8 @@ class TestFit:
         dataset_loader_train.assert_called_with()
         model.fit.assert_called_with(X, y)
         model_persister.write.assert_called_with(model)
+        model_persister.activate.assert_called_with(
+            model_persister.write.return_value)
 
     def test_no_persist(self, fit):
         model, dataset_loader_train, model_persister = Mock(), Mock(), Mock()
@@ -155,6 +157,18 @@ class TestFit:
                 persist_if_better_than=0.9,
                 )
 
+    def test_activate_no_persist(self, fit, dataset_loader):
+        model, model_persister = Mock(), Mock()
+
+        result = fit(
+            dataset_loader_train=dataset_loader,
+            model=model,
+            model_persister=model_persister,
+            persist=False,
+            )
+        assert result is model
+        model_persister.activate.call_count == 0
+
     def test_timestamp(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
 
@@ -175,6 +189,14 @@ class TestFit:
         timestamp = parse(model.__metadata__['train_timestamp'])
         assert before_fit < timestamp < after_fit
         model_persister.write.assert_called_with(model)
+
+
+def test_activate():
+    from palladium.fit import activate
+
+    persister = Mock()
+    activate(persister, 2)
+    persister.activate.assert_called_with(2)
 
 
 class TestGridSearch:

@@ -57,7 +57,10 @@ Options:
 
 @args_from_config
 def list(model_persister):
-    pprint(model_persister.list())
+    print("Models:")
+    pprint(model_persister.list_models())
+    print("Properties:")
+    pprint(model_persister.list_properties())
 
 
 def list_cmd(argv=sys.argv[1:]):  # pragma: no cover
