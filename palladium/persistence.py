@@ -1,6 +1,7 @@
 """:class:`~palladium.interfaces.ModelPersister` implementations.
 """
 
+import codecs
 import gzip
 import io
 import json
@@ -19,6 +20,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.types import TypeDecorator
+from sqlalchemy.types import STRINGTYPE
 
 from . import __version__
 from .interfaces import annotate
@@ -28,9 +31,6 @@ from .util import PluggableDecorator
 from .util import process_store
 from .util import RruleThread
 from .util import session_scope
-
-
-Base = declarative_base()
 
 
 class UpgradeSteps:
@@ -168,30 +168,9 @@ class Database(ModelPersister):
     into an SQL database.
     """
 
-    write_lock = Lock()
     upgrade_steps = UpgradeSteps()
 
-    class Property(Base):
-        __tablename__ = 'properties'
-        name = Column(String(length=10 ** 3), primary_key=True)
-        value = Column(String(length=10 ** 3), nullable=False)
-
-    class DBModel(Base):
-        __tablename__ = 'models'
-        version = Column(Integer, primary_key=True)
-        metadata_ = Column('metadata', String(length=10 ** 6), nullable=False)
-        chunks = relationship(
-            'DBModelChunk',
-            order_by="DBModelChunk.id",
-            )
-
-    class DBModelChunk(Base):
-        __tablename__ = 'model_chunks'
-        id = Column(Integer, primary_key=True)
-        model_version = Column(ForeignKey('models.version'))
-        blob = Column(LargeBinary, nullable=False)
-
-    def __init__(self, url, chunk_size=1024 ** 2 * 100):
+    def __init__(self, url, chunk_size=1024 ** 2 * 100, table_postfix=''):
         """
         :param str url:
           The database *url* that'll be used to make a connection.
@@ -202,20 +181,75 @@ class Database(ModelPersister):
           The pickled contents of the model are stored inside the
           database in chunks.  The default size is 1024 ** 2 * 100
           (100MB).
+
+        :param str table_postfix:
+          If *table_postfix* is provided, I will append it to the
+          table name of all tables used in this instance.
         """
         engine = create_engine(url)
         self.engine = engine
+        self.chunk_size = chunk_size
+        self.table_postfix = table_postfix
+        self.write_lock = Lock()
+        orms = self.create_orm_classes()
+        self.Property = orms['Property']
+        self.DBModel = orms['DBModel']
+        self.DBModelChunk = orms['DBModelChunk']
         metadata = self.DBModel.metadata
         metadata.bind = engine
         metadata.create_all()
         self.session = scoped_session(sessionmaker(bind=engine))
-        self.chunk_size = chunk_size
         self._initialize_properties()
 
     def _initialize_properties(self):
         with session_scope(self.session) as session:
             if session.query(self.Property).count() == 0:
                 self._set_property('db-version', __version__)
+
+    def _table_postfix(self, name):
+        if self.table_postfix:
+            return '{}_{}'.format(name, self.table_postfix)
+        else:
+            return name
+
+    def create_orm_classes(self):
+        Base = declarative_base()
+
+        return {
+            'Base': Base,
+            'Property': self.PropertyClass(Base),
+            'DBModel': self.DBModelClass(Base),
+            'DBModelChunk': self.DBModelChunkClass(Base),
+            }
+
+    def PropertyClass(self, Base):
+        class Property(Base):
+            __tablename__ = self._table_postfix('properties')
+            id = Column(Integer, primary_key=True)
+            name = Column(String(length=10 ** 3))
+            value = Column(String(length=10 ** 3), nullable=False)
+        return Property
+
+    def DBModelClass(self, Base):
+        class DBModel(Base):
+            __tablename__ = self._table_postfix('models')
+            version = Column(Integer, primary_key=True)
+            metadata_ = Column(
+                'metadata', String(length=10 ** 6), nullable=False)
+            chunks = relationship(
+                'DBModelChunk',
+                order_by="DBModelChunk.id",
+                )
+        return DBModel
+
+    def DBModelChunkClass(self, Base):
+        class DBModelChunk(Base):
+            __tablename__ = self._table_postfix('model_chunks')
+            id = Column(Integer, primary_key=True)
+            model_version = Column(
+                ForeignKey('{}.version'.format(self._table_postfix('models'))))
+            blob = Column(LargeBinary, nullable=False)
+        return DBModelChunk
 
     def read(self, version=None):
         with session_scope(self.session) as session:
@@ -320,6 +354,37 @@ class Database(ModelPersister):
             models = self.list_models()
             if models:
                 self.activate(int(models[-1]['version']))
+
+
+class DatabaseCLOB(Database):
+    """A :class:`~palladium.interfaces.ModelPersister` derived from
+    :class:`Database`, with only the slight difference of using
+    VARCHAR instead of BLOB to store the pickle data.
+
+    Use when BLOB is not available.
+    """
+    class BytesToBase64Type(TypeDecorator):
+        impl = STRINGTYPE
+
+        def process_bind_param(self, value, dialect):
+            if value is not None:
+                value = codecs.encode(bytes(value), 'base64').decode('utf-8')
+            return value
+
+        def process_result_value(self, value, dialect):
+            if value is not None:
+                value = codecs.decode(value.encode('utf-8'), 'base64')
+            return value
+
+    def DBModelChunkClass(self, Base):
+        class DBModelChunk(Base):
+            __tablename__ = self._table_postfix('model_chunks')
+            id = Column(Integer, primary_key=True)
+            model_version = Column(
+                ForeignKey('{}.version'.format(self._table_postfix('models'))))
+            blob = Column(self.BytesToBase64Type(
+                String(length=10 ** 6 * 2)), nullable=False)
+        return DBModelChunk
 
 
 class CachedUpdatePersister(ModelPersister):

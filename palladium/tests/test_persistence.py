@@ -494,6 +494,21 @@ class TestDatabase:
         assert database.list_properties() == {
             'db-version': '1.0', 'active-model': '2'}
 
+    def test_table_postfix(self, Database, request):
+        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
+        request.addfinalizer(lambda: os.remove(path))
+        db = Database('sqlite:///{}'.format(path), table_postfix='fix')
+        assert db.Property.__tablename__ == 'properties_fix'
+        assert db.DBModel.__tablename__ == 'models_fix'
+        assert db.DBModelChunk.__tablename__ == 'model_chunks_fix'
+
+
+class TestDatabaseCLOB(TestDatabase):
+    @pytest.fixture
+    def Database(self):
+        from palladium.persistence import DatabaseCLOB
+        return DatabaseCLOB
+
 
 class TestCachedUpdatePersister:
     @pytest.fixture
