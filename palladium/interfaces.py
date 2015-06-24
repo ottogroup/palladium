@@ -158,6 +158,17 @@ class ModelPersister(metaclass=ABCMeta):
           LookupError if no model with given *version* exists.
         """
 
+    def delete(self, version):
+        """Delete the model with the given *version* from the
+        database.
+
+        :param str version:
+          The *version* of the model that's activated.
+
+        :raises:
+          LookupError if no model with given *version* exists.
+        """
+
     @abstractmethod
     def list_models(self):
         """List metadata of all available models.

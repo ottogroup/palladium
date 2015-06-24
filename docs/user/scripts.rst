@@ -52,10 +52,10 @@ pld-list: *list available models*
 
 .. autosimple:: palladium.eval.list_cmd
 
-pld-activate: *activate an available model*
-===========================================
+pld-admin: *administer available models*
+========================================
 
-.. autosimple:: palladium.fit.activate_cmd
+.. autosimple:: palladium.fit.admin_cmd
 
 pld-version: *display version number*
 =====================================

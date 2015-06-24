@@ -113,24 +113,36 @@ def activate(model_persister, model_version):
     logger.info("Activated model with version {}.".format(model_version))
 
 
-def activate_cmd(argv=sys.argv[1:]):  # pragma: no cover
+@args_from_config
+def delete(model_persister, model_version):
+    model_persister.delete(model_version)
+    logger.info("Deleted model with version {}.".format(model_version))
+
+
+def admin_cmd(argv=sys.argv[1:]):  # pragma: no cover
     """\
-Activate the model with the given version.
+Activate or delete models.
 
 Models are usually made active right after fitting (see command
-pld-fit).  This command allows you to explicitly set the currently
-active model.  Use pld-list to get an overview of all available models
-along with their version identifiers.
+pld-fit).  The 'activate' command allows you to explicitly set the
+currently active model.  Use 'pld-list' to get an overview of all
+available models along with their version identifiers.
+
+Deleting a model will simply remove it from the database.
 
 Usage:
-  pld-activate <version> [options]
+  pld-admin activate <version> [options]
+  pld-admin delete <version> [options]
 
 Options:
   -h --help                 Show this screen.
 """
-    arguments = docopt(activate_cmd.__doc__, argv=argv)
+    arguments = docopt(admin_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
-    activate(model_version=int(arguments['<version>']))
+    if arguments['activate']:
+        activate(model_version=int(arguments['<version>']))
+    elif arguments['delete']:
+        delete(model_version=int(arguments['<version>']))
 
 
 @args_from_config

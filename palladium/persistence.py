@@ -115,6 +115,16 @@ class File(ModelPersister):
             raise LookupError(version)
         self._update_md({'properties': md['properties']})
 
+    def delete(self, version):
+        md = self._read_md()
+        versions = [m['version'] for m in md['models']]
+        version = int(version)
+        if version not in versions:
+            raise LookupError(version)
+        self._update_md({
+            'models': [m for m in md['models'] if m['version'] != version]})
+        os.remove(self.path.format(version=version) + '.pkl.gz')
+
     @property
     def _md_filename(self):
         return self.path.format(version='metadata') + '.json'
@@ -324,6 +334,10 @@ class Database(ModelPersister):
     def activate(self, version):
         self._set_property('active-model', str(version))
 
+    def delete(self, version):
+        with session_scope(self.session) as session:
+            session.query(self.DBModel).filter_by(version=version).delete()
+
     @property
     def _active_version(self):
         with session_scope(self.session) as session:
@@ -468,6 +482,9 @@ class CachedUpdatePersister(ModelPersister):
 
     def activate(self, version):
         return self.impl.activate(version)
+
+    def delete(self, version):
+        return self.impl.delete(version)
 
     def upgrade(self, from_version=None, to_version=__version__):
         return self.impl.upgrade(from_version, to_version)
