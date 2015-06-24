@@ -36,8 +36,12 @@ def test(dataset_loader_test, model_persister, model_version=None):
 
 
 def test_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Test a model.
+
+Uses 'dataset_loader_test' and 'model_persister' from the
+configuration to load a test dataset to test the accuracy of a trained
+model with.
 
 Usage:
   pld-test [options]
@@ -48,7 +52,7 @@ Options:
   --model-version=<version>  The version of the model to be tested. If
                              not specified, the newest model will be used.
 """
-    arguments = docopt(__doc__, argv=argv)
+    arguments = docopt(test_cmd.__doc__, argv=argv)
     model_version = arguments['--model-version']
     model_version = int(model_version) if model_version is not None else None
     initialize_config(__mode__='fit')
@@ -64,8 +68,11 @@ def list(model_persister):
 
 
 def list_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 List information about available models.
+
+Uses the 'model_persister' from the configuration to display a list of
+models and their metadata.
 
 Usage:
   pld-list [options]
@@ -73,6 +80,6 @@ Usage:
 Options:
   -h --help                  Show this screen.
 """
-    docopt(__doc__, argv=argv)
+    docopt(list_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
     list()

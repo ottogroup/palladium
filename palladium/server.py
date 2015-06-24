@@ -236,14 +236,14 @@ def alive(alive=None):
 
 
 def devserver_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
-Run a server for development.
+    """\
+Serve the web API for development.
 
 Usage:
   pld-devserver [options]
 
 Options:
-  -h --help                  Show this screen.
+  -h --help               Show this screen.
 
   --host=<host>           The host to use [default: 0.0.0.0].
 
@@ -251,7 +251,7 @@ Options:
 
   --debug=<debug>         Whether or not to use debug mode [default: 0].
 """
-    arguments = docopt(__doc__, argv=argv)
+    arguments = docopt(devserver_cmd.__doc__, argv=argv)
     initialize_config()
     app.run(
         host=arguments['--host'],

@@ -18,6 +18,7 @@ import os
 from unittest.mock import MagicMock
 
 import sphinx_rtd_theme
+from sphinx.ext import autodoc
 
 Mock = MagicMock
 
@@ -346,5 +347,19 @@ def maybe_skip_member(app, what, name, obj, skip, options):
         return skip
 
 
+class SimpleDocumenter(autodoc.MethodDocumenter):
+    """Used to extract literal docstrings.
+    """
+    objtype = "simple"
+
+    content_indent = u'    '
+
+    def add_directive_header(self, sig):
+        sourcename = self.get_sourcename()
+        self.add_line(u'::\n', sourcename)
+        pass
+
+
 def setup(app):
     app.connect('autodoc-skip-member', maybe_skip_member)
+    app.add_autodocumenter(SimpleDocumenter)

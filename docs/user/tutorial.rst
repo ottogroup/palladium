@@ -8,6 +8,8 @@ Tutorial
    :local:
 
 
+.. _tutorial-run:
+
 Run the Iris example
 ====================
 
@@ -257,6 +259,8 @@ At this point, feel free to change the configuration file to maybe try
 out different values for *C*.  Can you find a setting for *C* that
 produces better accuracy?
 
+
+.. _tutorial-grid-search:
 
 Grid search
 -----------
