@@ -1,7 +1,7 @@
 """:class:`~palladium.interfaces.ModelPersister` implementations.
 """
 
-import codecs
+import base64
 import gzip
 import io
 import json
@@ -22,7 +22,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeDecorator
-from sqlalchemy.types import STRINGTYPE
 
 from . import __version__
 from .interfaces import annotate
@@ -369,12 +368,12 @@ class DatabaseCLOB(Database):
 
         def process_bind_param(self, value, dialect):
             if value is not None:
-                value = codecs.encode(bytes(value), 'base64').decode('utf-8')
+                value = base64.b64encode(bytes(value)).decode('ascii')
             return value
 
         def process_result_value(self, value, dialect):
             if value is not None:
-                value = codecs.decode(value.encode('utf-8'), 'base64')
+                value = base64.b64decode(value.encode('ascii'))
             return value
 
     def DBModelChunkClass(self, Base):
