@@ -26,7 +26,7 @@ selection.
 
 
 - `Scikit-Learn Laboratory
-  <http://https://github.com/EducationalTestingService/skll>`_
+  <https://github.com/EducationalTestingService/skll>`_
 
   Tool to support experiments performed with scikit-learn. It allows
   to run various settings on different test sets and to get a summary
