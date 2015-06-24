@@ -41,13 +41,13 @@ to invoke pld-upgrade with an explicit ``--from`` version like so:
 
   pld-upgrade --from=0.9.1
 
-Backward incompatiblities in code
-=================================
+Backward incompatibilities in code
+==================================
 
 The development team makes an effort to try and keep the API backward
 compatibility, and only gradually deprecate old code where necessary.
 However, some changes between major Palladium versions still introduce
-backward incompatiblities and potentially require you to update your
+backward incompatibilities and potentially require you to update your
 Palladium plug-ins.
 
 Breaking changes between 0.9.1. and 1.0
