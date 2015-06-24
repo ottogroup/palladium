@@ -258,3 +258,58 @@ Options:
         port=int(arguments['--port']),
         debug=int(arguments['--debug']),
         )
+
+
+class PredictStream:
+    """A class that helps make predictions through stdin and stdout.
+    """
+    def __init__(self):
+        self.model = get_config()['model_persister'].read()
+        self.predict_service = get_config()['predict_service']
+
+    def process_line(self, line):
+        predict_service = self.predict_service
+        datas = ujson.loads(line)
+        samples = [predict_service.sample_from_data(self.model, data)
+                   for data in datas]
+        samples = np.array(samples)
+        params = predict_service.params_from_data(self.model, datas[0])
+        return predict_service.predict(self.model, samples, **params)
+
+    def listen(self, io_in, io_out, io_err):
+        """Listens to provided io stream and writes predictions
+        to output. In case of errors, the error stream will be used.
+        """
+        for line in io_in:
+            if line.strip().lower() == 'exit':
+                break
+
+            try:
+                y_pred = self.process_line(line)
+            except Exception as e:
+                io_out.write('[]\n')
+                io_err.write(
+                    "Error while processing input row: {}"
+                    "{}: {}\n".format(line, type(e), e))
+                io_err.flush()
+            else:
+                io_out.write(ujson.dumps(y_pred.tolist()))
+                io_out.write('\n')
+                io_out.flush()
+
+
+def stream_cmd(argv=sys.argv[1:]):  # pragma: no cover
+    __doc__ = """
+Start the streaming server, which listens to stdin, processes line
+by line, and returns predictions.
+
+Usage:
+  pld-stream [options]
+
+Options:
+  -h --help                  Show this screen.
+"""
+    docopt(__doc__, argv=argv)
+    initialize_config()
+    stream = PredictStream()
+    stream.listen(sys.stdin, sys.stdout, sys.stderr)
