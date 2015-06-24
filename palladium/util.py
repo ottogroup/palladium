@@ -284,7 +284,7 @@ def memory_usage_psutil():
 
 
 def version_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Print the version number of Palladium.
 
 Usage:
@@ -293,7 +293,7 @@ Usage:
 Options:
   -h --help                Show this screen.
 """
-    docopt(__doc__, argv=argv)
+    docopt(version_cmd.__doc__, argv=argv)
     print(__version__)
 
 
@@ -306,23 +306,22 @@ def upgrade(model_persister, from_version=None, to_version=None):
 
 
 def upgrade_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Upgrade the database to the latest version.
 
 Usage:
   pld-ugprade [options]
 
 Options:
-
   --from=<v>               Upgrade from a specific version, overriding
                            the version stored in the database.
 
   --to=<v>                 Upgrade to a specific version instead of the
-                           latest version ({version}).
+                           latest version.
 
   -h --help                Show this screen.
-""".format(version=__version__)
-    arguments = docopt(__doc__, argv=argv)
+"""
+    arguments = docopt(upgrade_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
     upgrade(from_version=arguments['--from'], to_version=arguments['--to'])
 

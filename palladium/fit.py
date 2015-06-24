@@ -68,8 +68,12 @@ def fit(dataset_loader_train, model, model_persister, persist=True,
 
 
 def fit_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Fit a model and save to database.
+
+Will use 'dataset_loader_train', 'model', and 'model_perister' from
+the configuration file, to load a dataset to train a model with, and
+persist it.
 
 Usage:
   pld-fit [options]
@@ -87,7 +91,7 @@ Options:
 
   -h --help                 Show this screen.
 """
-    arguments = docopt(__doc__, argv=argv)
+    arguments = docopt(fit_cmd.__doc__, argv=argv)
     no_save = arguments['--no-save']
     no_activate = arguments['--no-activate']
     save_if_better_than = arguments['--save-if-better-than']
@@ -110,8 +114,13 @@ def activate(model_persister, model_version):
 
 
 def activate_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Activate the model with the given version.
+
+Models are usually made active right after fitting (see command
+pld-fit).  This command allows you to explicitly set the currently
+active model.  Use pld-list to get an overview of all available models
+along with their version identifiers.
 
 Usage:
   pld-activate <version> [options]
@@ -119,7 +128,7 @@ Usage:
 Options:
   -h --help                 Show this screen.
 """
-    arguments = docopt(__doc__, argv=argv)
+    arguments = docopt(activate_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
     activate(model_version=int(arguments['<version>']))
 
@@ -154,8 +163,12 @@ def grid_search(dataset_loader_train, model, grid_search):
 
 
 def grid_search_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Grid search parameters for the model.
+
+Uses 'dataset_loader_train', 'model', and 'grid_search' from the
+configuration to load a training dataset, and run a grid search on the
+model using the grid of hyperparameters.
 
 Usage:
   pld-grid-search [options]
@@ -163,6 +176,6 @@ Usage:
 Options:
   -h --help                Show this screen.
 """
-    docopt(__doc__, argv=argv)
+    docopt(grid_search_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
     grid_search()
