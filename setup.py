@@ -62,7 +62,7 @@ setup(name='palladium',
           },
       entry_points={
           'console_scripts': [
-              'pld-activate = palladium.fit:activate_cmd',
+              'pld-admin = palladium.fit:admin_cmd',
               'pld-devserver = palladium.server:devserver_cmd',
               'pld-fit = palladium.fit:fit_cmd',
               'pld-grid-search = palladium.fit:grid_search_cmd',

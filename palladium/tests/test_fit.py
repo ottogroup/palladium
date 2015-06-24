@@ -199,6 +199,14 @@ def test_activate():
     persister.activate.assert_called_with(2)
 
 
+def test_delete():
+    from palladium.fit import delete
+
+    persister = Mock()
+    delete(persister, 2)
+    persister.delete.assert_called_with(2)
+
+
 class TestGridSearch:
     @pytest.fixture
     def grid_search(self):

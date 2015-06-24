@@ -264,6 +264,31 @@ class TestFile:
             with pytest.raises(LookupError):
                 File('model-{version}').activate(3)
 
+    def test_delete(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+             patch('palladium.persistence.File._update_md') as update_md,\
+             patch('palladium.persistence.os') as os:
+            read_md.return_value = {
+                'models': [{'version': 1}, {'version': 2}],
+                'properties': {'active-model': '2'},
+                }
+            File('model-{version}').delete(1)
+            update_md.assert_called_with({
+                'models': [{'version': 2}],
+                })
+            os.remove.assert_called_with('model-1.pkl.gz')
+
+    def test_delete_bad_version(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+             patch('palladium.persistence.File._update_md') as update_md,\
+             patch('palladium.persistence.os') as os:
+            read_md.return_value = {
+                'models': [{'version': 1}, {'version': 2}],
+                'properties': {'active-model': '2'},
+                }
+            with pytest.raises(LookupError):
+                File('model-{version}').delete(3)
+
     def test_upgrade_no_args(self, File):
         from palladium import __version__
 
@@ -402,6 +427,16 @@ class TestDatabase:
         assert 'active-model' not in database.list_properties()
         database.activate(1)
         assert database.list_properties()['active-model'] == '1'
+
+    def test_delete(self, database, dbmodel):
+        model = Dummy(name='mymodel')
+        database.write(model)
+        assert [m['version'] for m in database.list_models()] == [1, 2]
+        assert database.read(2) == model
+        database.delete(2)
+        assert [m['version'] for m in database.list_models()] == [1]
+        with pytest.raises(LookupError):
+            database.read(2)
 
     def test_write_no_entry(self, database):
         model = Dummy(name='mymodel')
@@ -582,6 +617,12 @@ class TestCachedUpdatePersister:
         persister = CachedUpdatePersister(impl)
         assert persister.activate(2) is impl.activate.return_value
         impl.activate.assert_called_with(2)
+
+    def test_proxy_delete(self, CachedUpdatePersister):
+        impl = Mock()
+        persister = CachedUpdatePersister(impl)
+        assert persister.delete(2) is impl.delete.return_value
+        impl.delete.assert_called_with(2)
 
     def test_proxy_upgrade(self, CachedUpdatePersister):
         impl = Mock()
