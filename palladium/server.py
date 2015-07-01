@@ -299,9 +299,24 @@ class PredictStream:
 
 
 def stream_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    __doc__ = """
+    """\
 Start the streaming server, which listens to stdin, processes line
 by line, and returns predictions.
+
+The input should consist of a list of json objects, where each object
+will result in a prediction.  Each line is processed in a batch.
+
+Example input (must be on a single line):
+
+  [{"sepal length": 1.0, "sepal width": 1.1, "petal length": 0.7,
+    "petal width": 5}, {"sepal length": 1.0, "sepal width": 8.0,
+    "petal length": 1.4, "petal width": 5}]
+
+Example output:
+
+  ["Iris-virginica","Iris-setosa"]
+
+An input line with the word 'exit' will quit the streaming server.
 
 Usage:
   pld-stream [options]
@@ -309,7 +324,7 @@ Usage:
 Options:
   -h --help                  Show this screen.
 """
-    docopt(__doc__, argv=argv)
+    docopt(stream_cmd.__doc__, argv=argv)
     initialize_config()
     stream = PredictStream()
     stream.listen(sys.stdin, sys.stdout, sys.stderr)

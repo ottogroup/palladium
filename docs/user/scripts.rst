@@ -38,6 +38,11 @@ pld-devserver: *serve the web API*
    - :ref:`tutorial-run`
    - :ref:`deployment`
 
+pld-stream: *make predictions through stdin and stdout*
+=======================================================
+
+.. autosimple:: palladium.server.stream_cmd
+
 pld-grid-search: *find optimal hyperparameters*
 ===============================================
 
