@@ -1,3 +1,29 @@
+v1.0 - 2015-07-01
+=================
+
+- Added a streaming server (`pld-stream`) which listens to stdin,
+  processes line by line, and returns predictions.
+
+- Added support for batch processing through the web API.  You can now
+  use a POST request to predict for a number of samples at once.
+  (Please see section "Upgrading" in the docs for details about
+  changes to the PredictService API.)
+
+- Added support for selecting active model used for predictions.
+  Previously, the latest trained model was used.  (Please see section
+  "Upgrading" in the docs for details on how to upgrade model
+  persisters (database or file) to the latest version.
+
+- Added a new command `pld-admin` to activate and delete models.
+
+- Added a new command `pld-dockerize` to create application specific
+  docker images for Palladium-based services.  Previously, this used
+  to be handled by a script in `addons/docker/palladium_app_image`.
+
+- Added a ModelPersister for RDBMs that don't have BLOB.
+
+- Documented scripts.
+
 v0.9.1 - 2015-03-30
 ===================
 

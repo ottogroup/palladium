@@ -34,7 +34,7 @@ Upgrading the Database persister from version 0.9.1 to 1.0
 ----------------------------------------------------------
 
 Users of :class:`palladium.persistence.Database` that are upgrading
-from version 0.9.1 to a more recent version (maybe 1.0) are required
+from version 0.9.1 to a more recent version (e.g. 1.0) are required
 to invoke pld-upgrade with an explicit ``--from`` version like so:
 
 .. code-block:: bash

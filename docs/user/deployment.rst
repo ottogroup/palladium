@@ -150,12 +150,12 @@ image can be pulled from Docker Hub as follows:
 
 As an example, let's build a Docker image for the Iris example that's
 included in the source.  We'll use the Palladium base image for
-version 0.9.1, and we'll name our own image ``my-palladium-app``.
-Thus, we invoke ``pld-dockerize`` like so:
+version 1.0, and we'll name our own image ``my-palladium-app``.  Thus,
+we invoke ``pld-dockerize`` like so:
 
 .. code-block:: bash
 
-  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:0.9.1 myname/my-palladium-app:1.0
+  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:1.0 myname/my-palladium-app:1.0
 
 This command will in fact create two images: one that's called
 ``my-palladium-app``, another one that's called
