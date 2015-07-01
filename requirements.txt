@@ -7,15 +7,14 @@ itsdangerous==0.24
 joblib==0.8.4
 # julia==0.1.1
 numpy==1.9.2
-pandas==0.16.0
+pandas==0.16.2
 psutil==2.2.1
-py==1.4.26
 python-dateutil==2.4.2
-pytz==2015.2
+pytz==2015.4
 # rpy2==2.5.2
 scikit-learn==0.16.1
 scipy==0.15.1
 # singledispatch==3.4.0.3  # for Python 3.3
 six==1.9.0
-sqlalchemy==1.0.1
+sqlalchemy==1.0.5
 ujson==1.33
