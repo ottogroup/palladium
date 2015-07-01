@@ -10,15 +10,15 @@
     :target: https://readthedocs.org/projects/palladium/?badge=latest
     :alt: Documentation status
 
-.. image:: https://pypip.in/version/palladium/badge.svg
+.. image:: https://img.shields.io/pypi/v/palladium.svg
     :target: https://pypi.python.org/pypi/palladium/
     :alt: Latest version
 
-.. image:: https://pypip.in/py_versions/palladium/badge.svg
+.. image:: https://img.shields.io/pypi/pyversions/palladium.svg
     :target: https://pypi.python.org/pypi/palladium/
     :alt: Supported Python versions
 
-.. image:: https://pypip.in/license/palladium/badge.svg
+.. image:: https://img.shields.io/pypi/l/palladium.svg
     :target: https://pypi.python.org/pypi/palladium/
     :alt: License
 
