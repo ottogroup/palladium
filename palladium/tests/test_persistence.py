@@ -100,8 +100,9 @@ class TestFile:
             lp.return_value = {}
             lm.return_value = []
             f = File('/models/model-{version}')
-            with pytest.raises(LookupError):
+            with pytest.raises(LookupError) as exc:
                 f.read()
+            assert exc.value.args[0] == 'No active model available'
 
     def test_read_no_active_model(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
@@ -109,15 +110,17 @@ class TestFile:
             lp.return_value = {}
             lm.return_value = [{'version': 99}]
             f = File('/models/model-{version}')
-            with pytest.raises(LookupError):
+            with pytest.raises(LookupError) as exc:
                 f.read()
+            assert exc.value.args[0] == 'No active model available'
 
     def test_read_no_model_with_given_version(self, File):
         with patch('palladium.persistence.os.path.exists') as exists:
             exists.return_value = False
             f = File('/models/model-{version}')
-            with pytest.raises(LookupError):
+            with pytest.raises(LookupError) as exc:
                 f.read(1)
+            assert exc.value.args[0] == 'No such version: 1'
 
     def test_write_no_model_files(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
@@ -261,8 +264,21 @@ class TestFile:
                 'models': [{'version': 1}, {'version': 2}],
                 'properties': {'active-model': '2'},
                 }
-            with pytest.raises(LookupError):
+            with pytest.raises(LookupError) as exc:
                 File('model-{version}').activate(3)
+            assert exc.value.args[0] == 'No such version: 3'
+
+    def test_read_activated_model_missing(self, File):
+        with patch('palladium.persistence.File._read_md') as read_md,\
+             patch('palladium.persistence.File._update_md') as update_md:
+            read_md.return_value = {
+                'models': [{'version': 1}, {'version': 3}],
+                'properties': {'active-model': '2'},
+                }
+            with pytest.raises(LookupError) as exc:
+                File('model-{version}').read()
+            assert (exc.value.args[0] ==
+                    'Activated model not available. Maybe it was deleted.')
 
     def test_delete(self, File):
         with patch('palladium.persistence.File._read_md') as read_md,\
@@ -286,8 +302,9 @@ class TestFile:
                 'models': [{'version': 1}, {'version': 2}],
                 'properties': {'active-model': '2'},
                 }
-            with pytest.raises(LookupError):
+            with pytest.raises(LookupError) as exc:
                 File('model-{version}').delete(3)
+            assert exc.value.args[0] == 'No such version: 3'
 
     def test_upgrade_no_args(self, File):
         from palladium import __version__
@@ -416,12 +433,24 @@ class TestDatabase:
         assert database.read(1) == dbmodel
 
     def test_read_no_model(self, database):
-        with pytest.raises(LookupError):
+        with pytest.raises(LookupError) as exc:
             database.read()
+        assert exc.value.args[0] == 'No model available'
 
     def test_read_no_active_model(self, database, dbmodel):
-        with pytest.raises(LookupError):
+        with pytest.raises(LookupError) as exc:
             database.read()
+        assert exc.value.args[0] == 'No model available'
+
+    def test_read_activated_model_missing(self, database, dbmodel):
+        database.write(Dummy(name='mymodel'))
+        database.write(Dummy(name='mymodel2'))
+        database.activate(2)
+        database.delete(2)
+        with pytest.raises(LookupError) as exc:
+            database.read()
+        assert (exc.value.args[0] ==
+                'Activated model not available. Maybe it was deleted.')
 
     def test_activate(self, database, dbmodel):
         assert 'active-model' not in database.list_properties()
@@ -435,8 +464,9 @@ class TestDatabase:
         assert database.read(2) == model
         database.delete(2)
         assert [m['version'] for m in database.list_models()] == [1]
-        with pytest.raises(LookupError):
+        with pytest.raises(LookupError) as exc:
             database.read(2)
+        assert exc.value.args[0] == 'No model available'
 
     def test_write_no_entry(self, database):
         model = Dummy(name='mymodel')

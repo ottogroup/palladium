@@ -73,6 +73,8 @@ class File(ModelPersister):
         self.path = path
 
     def read(self, version=None):
+        use_active_model = version is None
+
         if version is None:
             props = self.list_properties()
             if 'active-model' not in props:
@@ -81,7 +83,12 @@ class File(ModelPersister):
 
         fname = self.path.format(version=version) + '.pkl.gz'
         if not os.path.exists(fname):
-            raise LookupError("No such version: {}".format(version))
+            if use_active_model:
+                raise LookupError(
+                    "Activated model not available. Maybe it was deleted.")
+            else:
+                raise LookupError("No such version: {}".format(version))
+
         with gzip.open(fname, 'rb') as f:
             return pickle.load(f)
 
@@ -112,7 +119,7 @@ class File(ModelPersister):
         md['properties']['active-model'] = str(version)
         versions = [m['version'] for m in md['models']]
         if int(version) not in versions:
-            raise LookupError(version)
+            raise LookupError("No such version: {}".format(version))
         self._update_md({'properties': md['properties']})
 
     def delete(self, version):
@@ -120,7 +127,7 @@ class File(ModelPersister):
         versions = [m['version'] for m in md['models']]
         version = int(version)
         if version not in versions:
-            raise LookupError(version)
+            raise LookupError("No such version: {}".format(version))
         self._update_md({
             'models': [m for m in md['models'] if m['version'] != version]})
         os.remove(self.path.format(version=version) + '.pkl.gz')
@@ -262,6 +269,8 @@ class Database(ModelPersister):
         return DBModelChunk
 
     def read(self, version=None):
+        use_active_model = version is None
+
         with session_scope(self.session) as session:
             query = session.query(self.DBModel)
             if not version:
@@ -277,6 +286,10 @@ class Database(ModelPersister):
                     fileobj.write(chunk.blob)
                 fileobj.seek(0)
                 return pickle.load(gzip.GzipFile(fileobj=fileobj, mode='rb'))
+
+        if use_active_model and dbmodel is None and version is not None:
+            raise LookupError(
+                "Activated model not available. Maybe it was deleted.")
 
         raise LookupError("No model available")
 
