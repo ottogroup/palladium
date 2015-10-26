@@ -205,6 +205,83 @@ def predict(model_persister, predict_service):
     return response
 
 
+# START Felipe
+def make_ujsonp_response(obj, status_code=200, callback=None):
+    """Encodes the given *obj* to json and wraps it in a response.
+
+    :return:
+      A Flask response.
+    """
+    json_encoded = ujson.encode(obj, ensure_ascii=False, double_precision=-1)
+    if callback:
+    	json_encoded = ''+callback+'('+json_encoded+');'
+    	print json_encoded
+
+    resp = make_response(json_encoded)
+    resp.mimetype = 'application/json'
+    resp.content_type = 'application/json; charset=utf-8'
+    resp.status_code = status_code
+    return resp
+
+
+class PredictWithJsonp(PredictService):
+
+	def do(self, model, request):
+        if request.method == 'GET':
+            single = True
+            callback = ''
+            if 'callback' in request.args:
+            	callback = request.args.pop('callback')
+            	self.callback = callback
+            	print (self.callback)
+            	print (callback)
+
+            samples = np.array([self.sample_from_data(model, request.args)])
+        else:
+            single = False
+            samples = []
+
+            for data in request.json:
+                samples.append(self.sample_from_data(model, data))
+            samples = np.array(samples)
+
+        params = self.params_from_data(model, request.args)
+        y_pred = self.predict(model, samples, **params)
+        return self.response_from_prediction(y_pred, single=single)
+
+
+	def response_from_prediction(self, y_pred, single=True):
+        """Turns a model's prediction in *y_pred* into a JSON
+        response.
+        """
+        result = y_pred.tolist()
+        if single:
+            result = result[0]
+        response = {
+            'metadata': get_metadata(),
+            'result': result,
+            }
+        return make_ujsonp_response(response, status_code=200, callback=self.callback)
+
+
+@app.route('/predictjsonp', methods=['GET', 'POST'])
+@PluggableDecorator('predict_decorators')
+@args_from_config
+def predict_jsonp(model_persister, predict_service):
+    try:
+        model = model_persister.read()
+        response = predict_service(model, request)
+    except Exception as exc:
+        logger.exception("Unexpected error")
+        response = make_ujson_response({
+            "status": "ERROR",
+            "error_code": -1,
+            "error_message": "{}: {}".format(exc.__class__.__name__, str(exc)),
+        }, status_code=500)
+
+    return response
+# FINISH
+
 @app.route('/alive')
 @PluggableDecorator('alive_decorators')
 @args_from_config
@@ -236,21 +313,21 @@ def alive(alive=None):
 
 
 def devserver_cmd(argv=sys.argv[1:]):  # pragma: no cover
-    """\
-Serve the web API for development.
+    """
+    Serve the web API for development.
 
-Usage:
-  pld-devserver [options]
+    Usage:
+      pld-devserver [options]
 
-Options:
-  -h --help               Show this screen.
+    Options:
+      -h --help               Show this screen.
 
-  --host=<host>           The host to use [default: 0.0.0.0].
+      --host=<host>           The host to use [default: 0.0.0.0].
 
-  --port=<port>           The port to use [default: 5000].
+      --port=<port>           The port to use [default: 5000].
 
-  --debug=<debug>         Whether or not to use debug mode [default: 0].
-"""
+      --debug=<debug>         Whether or not to use debug mode [default: 0].
+    """
     arguments = docopt(devserver_cmd.__doc__, argv=argv)
     initialize_config()
     app.run(
@@ -300,30 +377,30 @@ class PredictStream:
 
 def stream_cmd(argv=sys.argv[1:]):  # pragma: no cover
     """\
-Start the streaming server, which listens to stdin, processes line
-by line, and returns predictions.
+    Start the streaming server, which listens to stdin, processes line
+    by line, and returns predictions.
 
-The input should consist of a list of json objects, where each object
-will result in a prediction.  Each line is processed in a batch.
+    The input should consist of a list of json objects, where each object
+    will result in a prediction.  Each line is processed in a batch.
 
-Example input (must be on a single line):
+    Example input (must be on a single line):
 
-  [{"sepal length": 1.0, "sepal width": 1.1, "petal length": 0.7,
-    "petal width": 5}, {"sepal length": 1.0, "sepal width": 8.0,
-    "petal length": 1.4, "petal width": 5}]
+      [{"sepal length": 1.0, "sepal width": 1.1, "petal length": 0.7,
+        "petal width": 5}, {"sepal length": 1.0, "sepal width": 8.0,
+        "petal length": 1.4, "petal width": 5}]
 
-Example output:
+    Example output:
 
-  ["Iris-virginica","Iris-setosa"]
+      ["Iris-virginica","Iris-setosa"]
 
-An input line with the word 'exit' will quit the streaming server.
+    An input line with the word 'exit' will quit the streaming server.
 
-Usage:
-  pld-stream [options]
+    Usage:
+      pld-stream [options]
 
-Options:
-  -h --help                  Show this screen.
-"""
+    Options:
+      -h --help                  Show this screen.
+    """
     docopt(stream_cmd.__doc__, argv=argv)
     initialize_config()
     stream = PredictStream()
