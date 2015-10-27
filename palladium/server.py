@@ -229,7 +229,7 @@ class PredictWithJsonp(PredictService):
     def do(self, model, request):
         if request.method == 'GET':
             single = True
-            callback = 
+            callback = ''
             if 'callback' in request.args:
                 callback = request.args.get('callback')
                 self.callback = callback
