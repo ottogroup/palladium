@@ -229,14 +229,17 @@ class PredictWithJsonp(PredictService):
     def do(self, model, request):
         if request.method == 'GET':
             single = True
-            callback = ''
+            callback = 
             if 'callback' in request.args:
-                callback = request.args.pop('callback')
+                callback = request.args.get('callback')
                 self.callback = callback
                 print (self.callback)
                 print (callback)
 
-            samples = np.array([self.sample_from_data(model, request.args)])
+            a_copy = request.args.copy()
+            a_copy.pop('callback')
+            #samples = np.array([self.sample_from_data(model, request.args)])
+            samples = np.array([self.sample_from_data(model, a_copy)])
         else:
             single = False
             samples = []
