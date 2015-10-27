@@ -214,8 +214,8 @@ def make_ujsonp_response(obj, status_code=200, callback=None):
     """
     json_encoded = ujson.encode(obj, ensure_ascii=False, double_precision=-1)
     if callback:
-    	json_encoded = ''+callback+'('+json_encoded+');'
-    	print json_encoded
+        json_encoded = ''+callback+'('+json_encoded+');'
+        print (json_encoded)
 
     resp = make_response(json_encoded)
     resp.mimetype = 'application/json'
@@ -226,15 +226,15 @@ def make_ujsonp_response(obj, status_code=200, callback=None):
 
 class PredictWithJsonp(PredictService):
 
-	def do(self, model, request):
+    def do(self, model, request):
         if request.method == 'GET':
             single = True
             callback = ''
             if 'callback' in request.args:
-            	callback = request.args.pop('callback')
-            	self.callback = callback
-            	print (self.callback)
-            	print (callback)
+                callback = request.args.pop('callback')
+                self.callback = callback
+                print (self.callback)
+                print (callback)
 
             samples = np.array([self.sample_from_data(model, request.args)])
         else:
@@ -250,7 +250,7 @@ class PredictWithJsonp(PredictService):
         return self.response_from_prediction(y_pred, single=single)
 
 
-	def response_from_prediction(self, y_pred, single=True):
+    def response_from_prediction(self, y_pred, single=True):
         """Turns a model's prediction in *y_pred* into a JSON
         response.
         """
