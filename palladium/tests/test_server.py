@@ -287,6 +287,7 @@ class TestAliveFunctional:
         resp_data = json.loads(resp.get_data(as_text=True))
 
         assert sorted(resp_data.keys()) == ['memory_usage',
+                                            'memory_usage_vms',
                                             'palladium_version',
                                             'service_metadata']
         assert resp_data['service_metadata'] == config['service_metadata']

@@ -212,10 +212,12 @@ def alive(alive=None):
     if alive is None:
         alive = {}
 
+    mem, mem_vms = memory_usage_psutil()
     info = {
-        'memory_usage': int(memory_usage_psutil()),
+        'memory_usage': mem,  # rss, resident set size
+        'memory_usage_vms': mem_vms,  # vms, virtual memory size
         'palladium_version': __version__,
-        }
+    }
 
     info['service_metadata'] = get_config().get('service_metadata', {})
 

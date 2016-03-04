@@ -4,7 +4,7 @@
 Installation
 ============
 
-Palladium requires Python 3.3 or better to run. If you are currently using
+Palladium requires Python 3.4 or better to run. If you are currently using
 an older version of Python, you might want to check the :ref:`FAQ
 entry about virtual environments <virtual-env>`.  Some of Palladium's
 dependencies such as ``numpy``, ``scipy`` and ``scikit-learn`` may
