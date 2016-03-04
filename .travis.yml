@@ -16,7 +16,7 @@ before_install:
   - pip install pytest pytest-cov
   - pip install coveralls
 install:
-  - travis_retry pip install rpy2==2.7.8
+  - travis_retry pip install rpy2==2.5.2
   - travis_retry python setup.py dev
 script: travis_wait py.test --runslow
 after_success:
