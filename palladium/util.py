@@ -280,7 +280,8 @@ def memory_usage_psutil():
     """
     process = psutil.Process(os.getpid())
     mem = process.memory_info()[0] / float(2 ** 20)
-    return mem
+    mem_vms = process.memory_info()[1] / float(2 ** 20)
+    return mem, mem_vms
 
 
 def version_cmd(argv=sys.argv[1:]):  # pragma: no cover
