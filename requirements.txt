@@ -1,20 +1,19 @@
 Flask==0.10.1
-Jinja2==2.7.3
+Jinja2==2.8
 MarkupSafe==0.23
-Werkzeug==0.10.4
+Werkzeug==0.11.4
 docopt==0.6.2
 itsdangerous==0.24
 joblib==0.8.4
 # julia==0.1.1
-numpy==1.9.2
-pandas==0.16.2
-psutil==2.2.1
+numpy==1.10.4
+pandas==0.17.1
+psutil==3.4.2
 python-dateutil==2.4.2
-pytz==2015.4
-# rpy2==2.5.2
-scikit-learn==0.16.1
-scipy==0.15.1
-# singledispatch==3.4.0.3  # for Python 3.3
-six==1.9.0
-sqlalchemy==1.0.5
-ujson==1.33
+pytz==2015.7
+# rpy2==2.7.8
+scikit-learn==0.17.1
+scipy==0.17.0
+six==1.10.0
+sqlalchemy==1.0.11
+ujson==1.35
