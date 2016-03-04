@@ -1,7 +1,7 @@
 language: python
 python:
-  - "3.3"
   - "3.4"
+  - "3.5"
 env:
   - TRAVIS=yes
 before_install:
@@ -16,8 +16,7 @@ before_install:
   - pip install pytest pytest-cov
   - pip install coveralls
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.3* ]]; then conda config --add channels https://conda.binstar.org/asmeurer; conda install --yes singledispatch; fi
-  - travis_retry pip install rpy2==2.5.2
+  - travis_retry pip install rpy2==2.7.8
   - travis_retry python setup.py dev
 script: travis_wait py.test --runslow
 after_success:
