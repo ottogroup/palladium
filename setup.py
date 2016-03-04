@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = '1.0.1.dev1'
+version = open('VERSION').read().rstrip()
 
 install_requires = [
     'docopt',
