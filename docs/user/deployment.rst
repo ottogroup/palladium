@@ -127,9 +127,9 @@ Run ``docker build`` in your terminal:
 
 .. code-block:: bash
 
-  sudo docker build -t myname/palladium-base:1.0 .
+  sudo docker build -t myname/palladium-base:1.0.1 .
 
-A Docker image with the name ``myname/palladium-base:1.0`` should now
+A Docker image with the name ``myname/palladium-base:1.0.1`` should now
 be created. You can check this with:
 
 .. code-block:: bash
