@@ -13,8 +13,8 @@ RUN conda config --add channels https://conda.binstar.org/ottogroup \
     && conda config --set ssl_verify false \
     && conda update --yes conda
 
-RUN wget --no-check-certificate https://raw.githubusercontent.com/ottogroup/palladium/1.0/requirements.txt
+RUN wget --no-check-certificate https://raw.githubusercontent.com/ottogroup/palladium/1.0.1/requirements.txt
 
 RUN conda install --yes --file requirements.txt
 
-RUN conda install --no-deps palladium==1.0
+RUN conda install --no-deps palladium==1.0.1

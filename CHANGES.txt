@@ -1,3 +1,15 @@
+v1.0.1.dev1 - 2016-03-04
+========================
+
+- Updated requirements in order to use newer versions of dependencies
+
+- Added information about virtual memory size (vms) to /alive entry
+  point
+
+- Added Python 3.5 to and removed Python 3.3 from Travis CI test
+  settings
+
+
 v1.0 - 2015-07-01
 =================
 

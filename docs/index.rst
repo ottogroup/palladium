@@ -52,6 +52,14 @@ enterprise contexts for setting up productive services – like
 pluggable decorator lists** in the configuration file of a service,
 keeping track of service calls and corresponding permissions.
 
+Links
+-----
+
+- Source code repository at GitHub: https://github.com/ottogroup/palladium
+- Documentation including installation instructions and tutorial: http://palladium.readthedocs.org
+- Mailing list: https://groups.google.com/forum/#!forum/pld-list
+- Maintainer: `Andreas Lattner <https://github.com/alattner>`_
+
 User's Guide
 ------------
 

@@ -7,6 +7,28 @@ Frequently asked questions
 .. contents::
    :local:
 
+How do I contribute to Palladium?
+=================================
+
+Everyone is welcome to contribute to Palladium.  You can help us
+to improve Palladium when you:
+
+- Use Palladium and give us feedback or submit bug reports to GitHub.
+
+- Improve existing code or documentation and send us a pull request on
+  GitHub.
+
+- Suggest a new feature, and possibly send a pull request for it.
+
+In case you intend to improve or to add code to Palladium, we kindly ask you to:
+
+- Include documentation and tests for new code.
+
+- Ensure that all existing tests still run successfully.
+
+- Ensure backward compatibility in the general case.
+
+
 How do I configure where output is logged to?
 =============================================
 
