@@ -173,3 +173,53 @@ class TestScheduledDatasetLoader:
         assert loader.update_cache() == ('bla', 'bla')
         assert loader() == ('bla', 'bla')
         assert loader.impl.call_count == 2
+
+
+class TestDiskCacheDatasetLoader:
+    @pytest.fixture
+    def DiskCacheDatasetLoader(self):
+        from palladium.dataset import DiskCacheDatasetLoader
+        return DiskCacheDatasetLoader
+
+    def test_repeated(self, DiskCacheDatasetLoader, tmpdir):
+        impl = MagicMock(attr1='foo')
+        impl.return_value = {'my', 'data'}
+
+        # repeatedly call the loader; observe that number of calls to
+        # the impl stay at 1:
+        for i in range(2):
+            loader = DiskCacheDatasetLoader(
+                impl=impl,
+                path=str(tmpdir.join('mycache-{key}')),
+                attrs=['attr1'],
+                )
+            value = loader()
+            assert value == impl.return_value
+            assert impl.call_count == 1
+            assert len(tmpdir.listdir()) == 1
+
+    def test_repeated_diff_key(self, DiskCacheDatasetLoader, tmpdir):
+        impl = MagicMock(attr1='foo', attr2='bar')
+        impl.return_value = {'my', 'data'}
+
+        # repeatedly call the loader; change the attributes that
+        # contribute to the cache key:
+        attrs = [['attr1'], ['attr1', 'attr2']]
+
+        for i in range(2):
+            loader = DiskCacheDatasetLoader(
+                impl=impl,
+                path=str(tmpdir.join('mycache-{key}')),
+                attrs=attrs[i],
+                )
+            value = loader()
+            assert value == impl.return_value
+            assert impl.call_count == i + 1
+            assert len(tmpdir.listdir()) == i + 1
+
+    def test_bad_filename(self, DiskCacheDatasetLoader):
+        with pytest.raises(ValueError):
+            DiskCacheDatasetLoader(
+                impl=MagicMock(),
+                path='mycache-{badkey}',
+                )
