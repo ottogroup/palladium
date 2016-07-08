@@ -92,6 +92,7 @@ class SQL(DatasetLoader):
         self.ndarray = ndarray
         self.kwargs = kwargs
 
+    @PluggableDecorator('load_data_decorators')
     def __call__(self):
         """See :meth:`palladium.interfaces.DatasetLoader.__call__`.
         """
