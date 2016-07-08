@@ -1,6 +1,8 @@
 """Utilities for testing the performance of a trained model.
 """
 
+from code import InteractiveConsole
+from pprint import pformat
 from pprint import pprint
 import sys
 
@@ -83,3 +85,23 @@ Options:
     docopt(list_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
     list()
+
+
+def shell_cmd(argv=sys.argv[1:]):  # pragma: no cover
+    """\
+A Python shell that has all configuration loaded into the namespace.
+
+Usage:
+  pld-shell [options]
+
+Options:
+  -h --help                  Show this screen.
+"""
+    docopt(list_cmd.__doc__, argv=argv)
+    config = initialize_config(__mode__='fit')
+    banner = """\
+Welcome to the palladium shell.  I've loaded your configuration for you,
+and here's the variables you have access to:
+{}
+""".format(pformat(config))
+    InteractiveConsole(config).interact(banner=banner)
