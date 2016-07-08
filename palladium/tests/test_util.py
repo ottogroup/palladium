@@ -86,6 +86,11 @@ class TestInitializeConfigImpl:
                 },
                 'somethingelse',
                 ],
+            'mynestedlistofcomponents': [[{
+                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                'arg1': 'feep',
+                },
+                ]],
             'myconstant': 42,
             }
 
@@ -114,6 +119,10 @@ class TestInitializeConfigImpl:
         assert isinstance(mylistofcomponents[0], MyDummyComponent)
         assert mylistofcomponents[0].arg1 == 'wobwob'
         assert mylistofcomponents[1] == 'somethingelse'
+
+        mynestedlistofcomponents = config['mynestedlistofcomponents']
+        assert isinstance(mynestedlistofcomponents[0][0], MyDummyComponent)
+        assert mynestedlistofcomponents[0][0].arg1 == 'feep'
 
     def test_initialize_config_logging(self, _initialize_config):
         with patch('palladium.util.dictConfig') as dictConfig:

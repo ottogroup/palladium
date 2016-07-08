@@ -98,19 +98,24 @@ def initialize_config(**extra):
 
 def _initialize_config_recursive(mapping):
     rv = []
-    for key, value in tuple(mapping.items()):
-        if isinstance(value, dict):
-            rv.extend(_initialize_config_recursive(value))
-            if '__factory__' in value:
-                mapping[key] = create_component(value)
-                rv.append(mapping[key])
-        elif isinstance(value, (list, tuple)):
-            for i, item in enumerate(value):
-                if isinstance(item, dict):
-                    rv.extend(_initialize_config_recursive(item))
-                    if '__factory__' in item:
-                        value[i] = create_component(item)
-                        rv.append(value[i])
+    if isinstance(mapping, dict):
+        for key, value in tuple(mapping.items()):
+            if isinstance(value, dict):
+                rv.extend(_initialize_config_recursive(value))
+                if '__factory__' in value:
+                    mapping[key] = create_component(value)
+                    rv.append(mapping[key])
+            elif isinstance(value, (list, tuple)):
+                rv.extend(_initialize_config_recursive(value))
+    elif isinstance(mapping, (list, tuple)):
+        for i, item in enumerate(mapping):
+            if isinstance(item, dict):
+                rv.extend(_initialize_config_recursive(item))
+                if '__factory__' in item:
+                    mapping[i] = create_component(item)
+                    rv.append(mapping[i])
+            elif isinstance(item, (list, tuple)):
+                rv.extend(_initialize_config_recursive(item))
     return rv
 
 
