@@ -62,17 +62,18 @@ class TestInitializeConfigImpl:
         return _initialize_config
 
     def test_initialize_config(self, _initialize_config):
+        dummy = 'palladium.tests.test_util.MyDummyComponent'
         config = {
             'mycomponent': {
-                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                '__factory__': dummy,
                 'arg1': 3,
                 'arg2': {'no': 'factory'},
                 'subcomponent': {
-                    '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                    '__factory__': dummy,
                     'arg1': {
                         'subsubcomponent': {
                             '__factory__':
-                            'palladium.tests.test_util.MyDummyComponent',
+                            dummy,
                             'arg1': 'wobwob',
                             'arg2': 9,
                             },
@@ -81,11 +82,19 @@ class TestInitializeConfigImpl:
                     },
                 },
             'mylistofcomponents': [{
-                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                '__factory__': dummy,
                 'arg1': 'wobwob',
                 },
                 'somethingelse',
                 ],
+            'mynestedlistofcomponents': [[{
+                '__factory__': dummy,
+                'arg1': 'feep',
+                'arg2': {
+                    '__factory__': dummy,
+                    'arg1': 6,
+                },
+            }]],
             'myconstant': 42,
             }
 
@@ -114,6 +123,11 @@ class TestInitializeConfigImpl:
         assert isinstance(mylistofcomponents[0], MyDummyComponent)
         assert mylistofcomponents[0].arg1 == 'wobwob'
         assert mylistofcomponents[1] == 'somethingelse'
+
+        mnl = config['mynestedlistofcomponents']
+        assert isinstance(mnl[0][0], MyDummyComponent)
+        assert mnl[0][0].arg1 == 'feep'
+        assert isinstance(mnl[0][0].arg2, MyDummyComponent)
 
     def test_initialize_config_logging(self, _initialize_config):
         with patch('palladium.util.dictConfig') as dictConfig:
