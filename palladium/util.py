@@ -77,15 +77,16 @@ def get_config(**extra):
     if not _config.initialized:
         _config.update(extra)
         _config.initialized = True
-        fname = os.environ.get('PALLADIUM_CONFIG')
-        if fname is not None:
-            sys.path.insert(0, os.path.dirname(fname))
-
-            with open(fname) as f:
-                _config.update(
-                    eval(f.read(), {'environ': os.environ})
-                    )
-                _initialize_config(_config)
+        fnames = os.environ.get('PALLADIUM_CONFIG')
+        if fnames is not None:
+            fnames = [fname.strip() for fname in fnames.split(',')]
+            sys.path.insert(0, os.path.dirname(fnames[0]))
+            for fname in reversed(fnames):
+                with open(fname) as f:
+                    _config.update(
+                        eval(f.read(), {'environ': os.environ})
+                        )
+            _initialize_config(_config)
 
     return _config
 
