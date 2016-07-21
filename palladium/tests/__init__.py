@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import os
+from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
@@ -45,7 +46,7 @@ def predict(path='/predict?sepal length=1.0&sepal width=1.1&'
 
 
 def run_smoke_tests_with_config(config_fname, run=None, raise_errors=True,
-                                func_kwargs=None):
+                                func_kwargs=None, cwd=True):
     from palladium.util import logger  # don't break coverage
     from palladium.util import timer
 
@@ -63,7 +64,12 @@ def run_smoke_tests_with_config(config_fname, run=None, raise_errors=True,
 
         failed = []
 
-        with change_cwd(os.path.dirname(config_fname)):
+        if cwd:
+            cwd = change_cwd(os.path.dirname(config_fname))
+        else:
+            cwd = MagicMock()
+
+        with cwd:
             initialize_config(__mode__='fit')
             for func in (fit, activate, grid_search, test, predict):
                 if run and func.__name__ not in run:
