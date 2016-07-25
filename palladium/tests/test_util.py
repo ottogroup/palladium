@@ -199,10 +199,9 @@ class TestGetConfig:
 
         assert config_new == {'a': 42, 'b': 7}
 
-        # Files earlier in the list override files later in the list,
-        # just like with Python's class inheritance:
+        # Files later in the list override files earlier in the list:
         assert fake_open.call_args_list == [
-            call('andanother'), call('somepath')]
+            call('somepath'), call('andanother')]
 
     def test_read_environ(self, get_config, config):
         config.initialized = False

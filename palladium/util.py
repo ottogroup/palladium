@@ -81,7 +81,7 @@ def get_config(**extra):
         if fnames is not None:
             fnames = [fname.strip() for fname in fnames.split(',')]
             sys.path.insert(0, os.path.dirname(fnames[0]))
-            for fname in reversed(fnames):
+            for fname in fnames:
                 with open(fname) as f:
                     _config.update(
                         eval(f.read(), {'environ': os.environ})
