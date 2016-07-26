@@ -268,50 +268,20 @@ class TestGridSearch:
 class TestFitMode():
     # test if fit mode is set in non-server scripts
 
-    @staticmethod
-    def check_fit_mode(cmd, argv, patched_func, config):
-        assert config.initialized is False
-        cmd(argv=argv)
-        assert config.initialized is True
-        assert config == {'__mode__': 'fit'}
-
-    def test_fit_cmd_mode_set(self, config):
-        with patch('palladium.fit.fit') as patched_func:
-            from palladium.fit import fit_cmd
-            self.check_fit_mode(
-                cmd=fit_cmd, argv=[], patched_func=patched_func, config=config)
-
-    def test_grid_search_cmd_mode_set(self, config):
-        with patch('palladium.fit.grid_search') as patched_func:
-            from palladium.fit import grid_search_cmd
-            self.check_fit_mode(
-                cmd=grid_search_cmd, argv=[], patched_func=patched_func,
-                config=config)
-
-    def test_admin_cmd_mode_set(self, config):
-        with patch('palladium.fit.activate') as patched_func:
-            from palladium.fit import admin_cmd
-            self.check_fit_mode(
-                cmd=admin_cmd, argv=['activate', '1'],
-                patched_func=patched_func, config=config)
-
-    def test_test_cmd_mode_set(self, config):
-        with patch('palladium.eval.test') as patched_func:
-            from palladium.eval import test_cmd
-            self.check_fit_mode(
-                cmd=test_cmd, argv=[], patched_func=patched_func,
-                config=config)
-
-    def test_list_cmd_mode_set(self, config):
-        with patch('palladium.eval.list') as patched_func:
-            from palladium.eval import list_cmd
-            self.check_fit_mode(
-                cmd=list_cmd, argv=[], patched_func=patched_func,
-                config=config)
-
-    def test_upgrade_cmd_mode_set(self, config):
-        with patch('palladium.util.upgrade') as patched_func:
-            from palladium.util import upgrade_cmd
-            self.check_fit_mode(
-                cmd=upgrade_cmd, argv=[], patched_func=patched_func,
-                config=config)
+    @pytest.mark.parametrize("func, cmd, argv", [
+        ('palladium.fit.fit', 'palladium.fit.fit_cmd', ()),
+        ('palladium.fit.grid_search', 'palladium.fit.grid_search_cmd', ()),
+        ('palladium.fit.activate', 'palladium.fit.admin_cmd',
+         ('activate', '1')),
+        ('palladium.eval.test', 'palladium.eval.test_cmd', ()),
+        ('palladium.eval.list', 'palladium.eval.list_cmd', ()),
+        ('palladium.util.upgrade', 'palladium.util.upgrade_cmd', ()),
+        ])
+    def test_check_fit_mode(self, func, cmd, argv, config):
+        from palladium.util import resolve_dotted_name
+        with patch(func):
+            cmd = resolve_dotted_name(cmd)
+            assert config.initialized is False
+            cmd(argv=argv)
+            assert config.initialized is True
+            assert config == {'__mode__': 'fit'}
