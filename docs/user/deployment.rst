@@ -28,13 +28,13 @@ For production use, you probably want to use something faster and more
 robust.  Many options are listed in the `Flask deployment docs
 <http://flask.pocoo.org/docs/deploying/>`_.  If you follow any of
 these instructions, be aware that the Flask app in Palladium is available as
-``palladium.server:app``.  So here's how you would start an Palladium prediction
+``palladium.wsgi:app``.  So here's how you would start an Palladium prediction
 server using `gunicorn <http://gunicorn.org/>`_:
 
 .. code-block:: bash
 
    export PALLADIUM_CONFIG=/path/to/myconfig.py
-   gunicorn palladium.server:app
+   gunicorn palladium.wsgi:app
 
 An example configuration to `use nginx to proxy requests to gunicorn
 <http://flask.pocoo.org/docs/0.10/deploying/wsgi-standalone/#proxy-setups>`_
@@ -62,6 +62,12 @@ reprinted here:
 	  proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
       }
   }
+
+.. note::
+
+  In previous versions (Palladium 1.0.1 and older), the Flask app was
+  accessed via ``palladium.server:app``. This was changed in order to
+  initialize the configuration during start-up.
 
 Benchmarking the service with Apache Benchmark
 ----------------------------------------------

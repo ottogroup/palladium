@@ -263,3 +263,25 @@ class TestGridSearch:
         GridSearchCV.assert_called_with(model, refit=False,
                                         cv=CVIterator.return_value)
         CVIterator.assert_called_with(n=10, p=2)
+
+
+class TestFitMode():
+    # test if fit mode is set in non-server scripts
+
+    @pytest.mark.parametrize("func, cmd, argv", [
+        ('palladium.fit.fit', 'palladium.fit.fit_cmd', ()),
+        ('palladium.fit.grid_search', 'palladium.fit.grid_search_cmd', ()),
+        ('palladium.fit.activate', 'palladium.fit.admin_cmd',
+         ('activate', '1')),
+        ('palladium.eval.test', 'palladium.eval.test_cmd', ()),
+        ('palladium.eval.list', 'palladium.eval.list_cmd', ()),
+        ('palladium.util.upgrade', 'palladium.util.upgrade_cmd', ()),
+        ])
+    def test_check_fit_mode(self, func, cmd, argv, config):
+        from palladium.util import resolve_dotted_name
+        with patch(func):
+            cmd = resolve_dotted_name(cmd)
+            assert config.initialized is False
+            cmd(argv=argv)
+            assert config.initialized is True
+            assert config == {'__mode__': 'fit'}
