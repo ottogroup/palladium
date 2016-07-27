@@ -1,6 +1,8 @@
 from datetime import datetime
 from time import sleep
 from unittest.mock import Mock
+from unittest.mock import MagicMock
+from unittest.mock import call
 from unittest.mock import mock_open
 from unittest.mock import patch
 
@@ -181,6 +183,25 @@ class TestGetConfig:
             mycomponent = config_new['mycomponent']
             assert isinstance(mycomponent, MyDummyComponent)
             assert mycomponent.arg1 == 3
+
+    def test_read_multiple_files(self, get_config, config):
+        config.initialized = False
+
+        fake_open = MagicMock()
+        fake_open.return_value.__enter__.return_value.read.side_effect = [
+            "{'a': 42, 'b': 6}", "{'b': 7}"
+            ]
+        with patch('palladium.util.open', fake_open, create=True):
+            with patch('palladium.util.os.environ', {
+                'PALLADIUM_CONFIG': 'somepath, andanother',
+                    }):
+                config_new = get_config()
+
+        assert config_new == {'a': 42, 'b': 7}
+
+        # Files later in the list override files earlier in the list:
+        assert fake_open.call_args_list == [
+            call('somepath'), call('andanother')]
 
     def test_read_environ(self, get_config, config):
         config.initialized = False
