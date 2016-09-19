@@ -24,7 +24,6 @@ import psutil
 
 from . import __version__
 
-
 logger = logging.getLogger('palladium')
 
 
@@ -94,7 +93,12 @@ def get_config(**extra):
 def initialize_config(**extra):
     if _config.initialized:
         raise RuntimeError("Configuration was already initialized")
-    return get_config(**extra)
+    config = get_config(**extra)
+
+    # post processing for server mode only
+    if extra.get('__mode__') != 'fit':
+        postprocess_config(config)
+    return config
 
 
 def _initialize_config_recursive(props):
@@ -170,6 +174,24 @@ def args_from_config(func):
 
     wrapper.__wrapped__ = func
     return wrapper
+
+
+def postprocess_config(config):
+    """
+    Function to check if config is compatible with current
+    version. This function provides temporarily support for
+    older versions by adding missing sections.
+
+    :param dict config:
+      A dict with a Palladium config.
+    """
+    if config.get('entry_points') is None:
+        from palladium.server import EntryPointManager
+        logger.warn(
+            'Deprecation warning: Future configuration files must provide an '
+            'entry_points section.')
+        pms = EntryPointManager()
+        pms.initialize_component(config)
 
 
 @contextmanager

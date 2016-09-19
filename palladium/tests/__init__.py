@@ -24,6 +24,43 @@ def flask_app(config):
     return app
 
 
+def _reset_url_map(
+        app, orig_rules, orig_rules_by_endpoint, orig_view_functions,
+        orig_remap):
+    app.url_map._rules = orig_rules
+    app.url_map._rules_by_endpoint = orig_rules_by_endpoint
+    app.view_functions = orig_view_functions
+    app.url_map._remap = True
+    app.url_map.update()
+    app.url_map._remap = orig_remap
+
+
+@pytest.fixture
+def flask_app_test(request, config):
+    """A Flask app where _url_map, _view_functions, _rules, and
+    _rules_by_end_point will be reset to the previous values after
+    running the test.
+    """
+    from palladium.server import app
+
+    orig_rules = app.url_map._rules
+    app.url_map._rules = [rule for rule in app.url_map._rules]
+    orig_rules_by_endpoint = app.url_map._rules_by_endpoint
+    app.url_map._rules_by_endpoint = {
+        k: v for k, v in app.url_map._rules_by_endpoint.items()}
+    orig_view_functions = app.view_functions
+    app.view_functions = {
+        k: v for (k, v) in app.view_functions.items()}
+    orig_remap = app.url_map._remap
+    request.addfinalizer(
+        lambda: (
+            _reset_url_map(
+                app, orig_rules, orig_rules_by_endpoint, orig_view_functions,
+                orig_remap))
+    )
+    return app
+
+
 @contextmanager
 def change_cwd(path):
     cwd = os.getcwd()
@@ -35,13 +72,19 @@ def change_cwd(path):
         os.chdir(cwd)
 
 
-def predict(path='/predict?sepal length=1.0&sepal width=1.1&'
-            'petal length=0.777&petal width=5'):
+def predict(
+        path='/predict?sepal length=1.0&sepal width=1.1&'
+             'petal length=0.777&petal width=5',
+        predict_service_name='predict_service'):
     from palladium.server import app
     from palladium.server import predict
+    from palladium.util import get_config
+
+    model_persister = get_config()['model_persister']
+    predict_service = get_config()[predict_service_name]
 
     with app.test_request_context(path):
-        response = predict()
+        response = predict(model_persister, predict_service)
         assert response.status_code == 200
 
 

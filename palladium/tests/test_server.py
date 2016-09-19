@@ -4,6 +4,7 @@ import json
 import math
 from threading import Thread
 from unittest.mock import Mock
+from unittest.mock import mock_open
 from unittest.mock import patch
 
 import dateutil.parser
@@ -243,11 +244,16 @@ class TestPredict:
         from palladium.server import predict
         return predict
 
-    def test_predict_functional(self, config, flask_app, flask_client):
+    def test_predict_functional(self, config, flask_app_test, flask_client):
         from palladium.server import make_ujson_response
         model_persister = config['model_persister'] = Mock()
         predict_service = config['predict_service'] = Mock()
-        with flask_app.test_request_context():
+        config['entry_points'] = {
+            '__factory__': 'palladium.server.EntryPointManager'}
+        with flask_app_test.test_request_context():
+            from palladium.server import EntryPointManager
+            psm = EntryPointManager()
+            psm.initialize_component(config)
             predict_service.return_value = make_ujson_response(
                 'a', status_code=200)
 
@@ -261,7 +267,7 @@ class TestPredict:
 
         assert resp_data == 'a'
         assert resp.status_code == 200
-        with flask_app.test_request_context():
+        with flask_app_test.test_request_context():
             predict_service.assert_called_with(model, request)
 
     def test_unknown_exception(self, predict, flask_app):
@@ -343,7 +349,7 @@ class TestPredictStream:
         io_in = io.StringIO()
         io_out = io.StringIO()
         io_err = io.StringIO()
- 
+
         stream_thread = Thread(
             target=stream.listen(io_in, io_out, io_err))
         stream_thread.start()
@@ -366,7 +372,7 @@ class TestPredictStream:
         ]
         for line in lines:
             io_in.write(line)
- 
+
         io_in.write('EXIT\n')
         io_in.seek(0)
         predict = stream.predict_service.predict
@@ -397,14 +403,14 @@ class TestPredictStream:
         # check if string representation of attribute can be converted to json
         assert ujson.loads(predict.call_args_list[1][0][1][0]['color']) == {
             "a": 1, "b": 2}
- 
+
     def test_predict_error(self, stream):
         from palladium.interfaces import PredictError
 
         io_in = io.StringIO()
         io_out = io.StringIO()
         io_err = io.StringIO()
- 
+
         line = '[{"hey": "1"}]\n'
         io_in.write(line)
         io_in.write('EXIT\n')
@@ -455,3 +461,65 @@ class TestPredictStream:
         assert (model.predict.call_args[0][0] == np.array([[1.0, 1.0]])).all()
         assert model.predict.call_args[1]['turbo'] is True
         assert model.predict.call_args[1]['magic'] is False
+
+
+class TestEntryPointManager:
+
+    def test_entry_point_manager_functional(
+            self, config, flask_app_test, flask_client):
+        config['model_persister'] = Mock()
+        predict_service1 = config['my_predict_service'] = Mock()
+        predict_service2 = config['my_predict_service2'] = Mock()
+        config['entry_points'] = {
+            '__factory__': 'palladium.server.EntryPointManager',
+            'mapping': {
+                '/mypredict': {
+                    'predict_service_name': 'my_predict_service',
+                    'decorator_list_name': 'predict_decorators',
+                },
+                '/mypredict2': {
+                    'predict_service_name': 'my_predict_service2',
+                    'decorator_list_name': 'predict_decorators',
+                },
+            },
+        }
+
+        # simulate real config (empty dict), otherwise
+        # _initialize_config will not be called
+        with patch('palladium.util.open',
+                   mock_open(read_data=str({})),
+                   create=True):
+            with patch(
+                    'palladium.util.os.environ',
+                    {'PALLADIUM_CONFIG': 'somepath'}
+            ):
+                with flask_app_test.test_request_context():
+                    from palladium.server import EntryPointManager
+                    from palladium.util import initialize_config
+                    initialize_config()
+                    predict_service1.return_value = 'hello'
+                    predict_service2.return_value = 'goodbye'
+
+        assert isinstance(config['entry_points'], EntryPointManager)
+
+        resp1 = flask_client.get(
+            'mypredict?param=bla')
+        assert resp1.get_data().decode('utf-8') == 'hello'
+
+        resp2 = flask_client.get(
+            'mypredict2?param=bla')
+        assert resp2.get_data().decode('utf-8') == 'goodbye'
+
+    def test_entry_point_manager_functional_deprecated_config(
+            self, config, flask_app_test, flask_client):
+        config['model_persister'] = Mock()
+        predict_service = config['predict_service'] = Mock()
+
+        with flask_app_test.test_request_context():
+            from palladium.util import initialize_config
+            initialize_config()
+            predict_service.return_value = 'hello'
+
+        resp = flask_client.get(
+            'predict?param=bla')
+        assert resp.get_data().decode('utf-8') == 'hello'

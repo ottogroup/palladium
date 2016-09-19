@@ -146,8 +146,12 @@ class TestInitializeConfig:
     def test_initialize_config_extra(self, config,
                                      initialize_config):
         config.clear()
-        initialize_config(two='three')
+        with patch('palladium.util.postprocess_config') as ppc:
+            initialize_config(two='three')
+
         assert config['two'] == 'three'
+        assert ppc.call_args_list[0][0][0] == {'two': 'three'}
+        assert ppc.call_count == 1
 
     def test_initialize_config_already_initialized(self, config,
                                                    initialize_config):
