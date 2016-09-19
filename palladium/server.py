@@ -267,7 +267,6 @@ def create_predict_function(
 
 
 class EntryPointManager:
-    
     """Class to manage the mapping of entry points to predict
     functions. Mapping information has to be specified in
     Palladium's configuration file.
@@ -287,14 +286,18 @@ class EntryPointManager:
         self.mapping = mapping
 
     def register_predict_services(self, mapping):
-        """
-        Register entry points to Flask app.
-        :param dict mapping: define how services are are exposed
-                {
+        """Register entry points to Flask app.
+
+        :param dict mapping:
+          Defines how services are are exposed, e.g.::
+
+            {
                 '/predict1': {
                     'predict_service': 'myproject.server.PredictService'
                     'decorator_list_name': 'predict_decorators',
-                }
+                },
+            }
+
         """
         for route, service_spec in mapping.items():
             create_predict_function(

@@ -382,7 +382,7 @@ model's version:
 Predict service
 ---------------
 
-The last component in the Iris example configuration is called
+The next component in the Iris example configuration is called
 ``predict_service``.  The :class:`palladium.interfaces.PredictService` is
 the workhorse behind what us happening in the ``/predict`` HTTP
 endpoint.  Let us take a look at how it is configured:
@@ -456,6 +456,46 @@ like, you would override the
 :meth:`~palladium.server.PredictService.response_from_prediction` and
 :meth:`~palladium.server.PredictService.response_from_exception` methods,
 which are responsible for creating the JSON responses.
+
+
+Entry point manager
+-------------------
+
+The :class:`~palladium.server.EntryPointManager` can be used to
+specify which predict services are used by different entry points. It
+is possible to specify more than one mapping, e.g., if a model should
+be used in two different contexts with different parameters or
+response formats. Each mapping is specified by the entry point, the
+predict service name, and the predict decorator list name:
+
+.. code-block:: python
+
+    'entry_points': {
+        '__factory__': 'palladium.server.EntryPointManager',
+        'mapping': {
+            '/predict': {
+                'predict_service_name': 'predict_service',
+                'decorator_list_name': 'predict_decorators',
+            },
+        },
+    },
+
+There configuration must contain a predict service entry as specified
+in `predict_service_name`. It is not necessary that the decorator list
+as specified by `decorator_list_name` is defined in the configuration;
+if it does not exist, no decorators will be used for this predict
+service.
+
+.. note::
+
+  If no `entry_points` section is specified in the configuration file,
+  the current implementation will automatically create one using the
+  settings as it was the case in earlier Palladium versions, i.e., an
+  entry point `/predict` will be added pointing to the predict service
+  that has been specified in the `predict_service` section of the
+  configuration. Configuration files without an `entry_points` section
+  are deprecated and will not be supported in the future.
+
 
 
 Implementing the model as a pipeline
