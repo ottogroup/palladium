@@ -53,7 +53,10 @@ class PredictService:
         'bool': lambda x: x.lower() == 'true',
         }
 
-    def __init__(self, mapping, params=(), predict_proba=False, **kwargs):
+    def __init__(
+            self, mapping, params=(), entry_point='/predict',
+            decorator_list_name='predict_decorators',
+            predict_proba=False, **kwargs):
         """
         :param mapping:
           A list of query parameters and their type that should be
@@ -80,8 +83,14 @@ class PredictService:
         """
         self.mapping = mapping
         self.params = params
+        self.entry_point = entry_point
+        self.decorator_list_name = decorator_list_name
         self.predict_proba = predict_proba
         vars(self).update(kwargs)
+
+    def initialize_component(self, config):
+        create_predict_function(
+            self.entry_point, self, self.decorator_list_name)
 
     def __call__(self, model, request):
         try:
@@ -235,7 +244,7 @@ def alive(alive=None):
 
 
 def create_predict_function(
-        route, predict_service_name, decorator_list_name):
+        route, predict_service, decorator_list_name):
     """Creates a predict function and registers it to
     the Flask app using the route decorator.
 
@@ -255,7 +264,6 @@ def create_predict_function(
       A predict service function that will be used to process
       predict requests.
     """
-    predict_service = get_config().get(predict_service_name)
     model_persister = get_config().get('model_persister')
 
     @app.route(route, methods=['GET', 'POST'], endpoint=route)
@@ -264,50 +272,6 @@ def create_predict_function(
         return predict(model_persister, predict_service)
 
     return predict_func
-
-
-class EntryPointManager:
-    """Class to manage the mapping of entry points to predict
-    functions. Mapping information has to be specified in
-    Palladium's configuration file.
-    """
-
-    def __init__(self, mapping={
-            '/predict': {
-                'predict_service_name': 'predict_service',
-                'decorator_list_name': 'predict_decorators',
-            }
-    }):
-        """
-        :param dict mapping:
-          Specifies the mapping of entry points to predict services
-          and predict decorator lists.
-        """
-        self.mapping = mapping
-
-    def register_predict_services(self, mapping):
-        """Register entry points to Flask app.
-
-        :param dict mapping:
-          Defines how services are are exposed, e.g.::
-
-            {
-                '/predict1': {
-                    'predict_service': 'myproject.server.PredictService'
-                    'decorator_list_name': 'predict_decorators',
-                },
-            }
-
-        """
-        for route, service_spec in mapping.items():
-            create_predict_function(
-                route, service_spec['predict_service_name'],
-                service_spec['decorator_list_name'])
-
-    def initialize_component(self, config):
-        # have to use initialize component in order to make sure
-        # that predict service objects have been created before
-        self.register_predict_services(self.mapping)
 
 
 def devserver_cmd(argv=sys.argv[1:]):  # pragma: no cover
