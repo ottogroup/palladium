@@ -340,11 +340,8 @@ class TestPredictService:
             'entry_point': '/predict1',  # conflict: entry point exists
         }
 
-        with pytest.raises(AssertionError) as exc:
+        with pytest.raises(AssertionError):
             self._initialize_config(flask_app_test)
-        assert exc.value.msg == (
-            'View function mapping is overwriting an existing endpoint '
-            'function: /predict1')
 
 
 class TestPredict:
