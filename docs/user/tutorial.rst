@@ -458,44 +458,49 @@ like, you would override the
 which are responsible for creating the JSON responses.
 
 
-Entry point manager
--------------------
+Customizing entry points for predict services
+---------------------------------------------
 
-The :class:`~palladium.server.EntryPointManager` can be used to
-specify which predict services are used by different entry points. It
-is possible to specify more than one mapping, e.g., if a model should
-be used in two different contexts with different parameters or
-response formats. Each mapping is specified by the entry point, the
-predict service name, and the predict decorator list name:
+Predict service specifications can be customized by setting the
+``entry_point`` and ``decorator_list_name`` in the configuration. It
+is also possible to specify more than one predict service which can be
+reached by different entry points, e.g., if a model should be used in
+two different contexts with different parameters or response
+formats. This is an example how to specify two predict services with
+different entry points:
 
 .. code-block:: python
 
-    'entry_points': {
-        '__factory__': 'palladium.server.EntryPointManager',
-        'mapping': {
-            '/predict': {
-                'predict_service_name': 'predict_service',
-                'decorator_list_name': 'predict_decorators',
-            },
-        },
-    },
+    'predict_service1': {
+        '__factory__': 'mypackage.server.PredictService',
+        'mapping': [
+            ('sepal length', 'float'),
+            ('sepal width', 'float'),
+            ('petal length', 'float'),
+            ('petal width', 'float'),
+            ],
+	'entry_point': '/predict',
+	'decorator_list_name': 'predict_decorators',
+        }
+    'predict_service2': {
+        '__factory__': 'mypackage.server.PredictServiceID',
+        'mapping': [
+            ('id', 'int'),
+            ],
+	'entry_point': '/predict-by-id',
+	'decorator_list_name': 'predict_decorators_id',
+        }
 
-There configuration must contain a predict service entry as specified
-in `predict_service_name`. It is not necessary that the decorator list
-as specified by `decorator_list_name` is defined in the configuration;
-if it does not exist, no decorators will be used for this predict
-service.
+It is not necessary that the decorator list as specified by
+``decorator_list_name`` is defined in the configuration; if it does
+not exist, no decorators will be used for this predict service.
 
 .. note::
 
-  If no `entry_points` section is specified in the configuration file,
-  the current implementation will automatically create one using the
-  settings as it was the case in earlier Palladium versions, i.e., an
-  entry point `/predict` will be added pointing to the predict service
-  that has been specified in the `predict_service` section of the
-  configuration. Configuration files without an `entry_points` section
-  are deprecated and will not be supported in the future.
-
+  If ``entry_point`` and ``decorator_list_name`` are omitted,
+  ``/predict`` and ``predict_decorators`` will be used as default
+  values, leading to the same behavior as it was the case in earlier
+  Palladium versions.
 
 
 Implementing the model as a pipeline
