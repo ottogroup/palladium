@@ -251,13 +251,11 @@ def create_predict_function(
     :param str route:
       Path of the entry point.
 
-    :param str predict_service_name:
-      The name of the predict service to be used for this entry
-      point. A predict service with this name must be specified
-      in the active Palladium config.
+    :param palladium.interfaces.PredictService predict_service:
+      The predict service to be registered to this entry point.
 
     :param str decorator_list_name:
-      The decorator list to be used for this predict services. It is
+      The decorator list to be used for this predict service. It is
       OK if there is no such entry in the active Palladium config.
 
     :return:
