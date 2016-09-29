@@ -18,37 +18,6 @@ class Dummy:
         return vars(self) == vars(other)
 
 
-def create_dbmodel(database):
-    from palladium.util import session_scope
-
-    model = Dummy(
-        name='mymodel',
-        __metadata__={'some': 'metadata', 'version': 1},
-    )
-
-    model_blob = gzip.compress(pickle.dumps(model), compresslevel=0)
-    chunk_size = 4
-    chunks = [model_blob[i:i + chunk_size]
-              for i in range(0, len(model_blob), chunk_size)]
-
-    dbmodel = database.DBModel(
-        version=1,
-        chunks=[
-            database.DBModelChunk(
-                model_version=1,
-                blob=chunk,
-            )
-            for chunk in chunks
-        ],
-        metadata_=json.dumps(model.__metadata__),
-    )
-
-    with session_scope(database.session) as session:
-        session.add(dbmodel)
-
-    return model
-
-
 class TestUpgradeSteps:
     @pytest.fixture
     def steps(self):
@@ -420,22 +389,34 @@ class TestDatabase:
 
     @pytest.fixture
     def dbmodel(self, database):
-        return create_dbmodel(database)
+        from palladium.util import session_scope
 
-    @pytest.fixture
-    def DatabaseCLOB(self):
-        from palladium.persistence import DatabaseCLOB
-        return DatabaseCLOB
-        
-    @pytest.fixture
-    def database_clob(self, request, DatabaseCLOB):
-        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
-        request.addfinalizer(lambda: os.remove(path))
-        return DatabaseCLOB('sqlite:///{}'.format(path), chunk_size=4)
+        model = Dummy(
+            name='mymodel',
+            __metadata__={'some': 'metadata', 'version': 1},
+            )
 
-    @pytest.fixture
-    def dbmodel_clob(self, database_clob):
-        return create_dbmodel(database_clob)
+        model_blob = gzip.compress(pickle.dumps(model), compresslevel=0)
+        chunk_size = 4
+        chunks = [model_blob[i:i + chunk_size]
+                  for i in range(0, len(model_blob), chunk_size)]
+
+        dbmodel = database.DBModel(
+            version=1,
+            chunks=[
+                database.DBModelChunk(
+                    model_version=1,
+                    blob=chunk,
+                    )
+                for chunk in chunks
+                ],
+            metadata_=json.dumps(model.__metadata__),
+            )
+
+        with session_scope(database.session) as session:
+            session.add(dbmodel)
+
+        return model
 
     def test_initialize_properties(self, database):
         from palladium import __version__
@@ -445,11 +426,6 @@ class TestDatabase:
         database.write(Dummy(name='mymodel'))
         database.activate(1)
         assert database.read() == dbmodel
-
-    def test_read_clob(self, database_clob, dbmodel_clob):
-        database_clob.write(Dummy(name='mymodel'))
-        database_clob.activate(1)
-        assert database_clob.read() == dbmodel_clob
 
     def test_read_with_version(self, database, dbmodel):
         database.write(Dummy(name='mymodel'))
@@ -582,14 +558,6 @@ class TestDatabase:
         assert database.list_properties() == {
             'db-version': '1.0', 'active-model': '2'}
 
-    def test_table_postfix_default(self, Database, request):
-        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
-        request.addfinalizer(lambda: os.remove(path))
-        db = Database('sqlite:///{}'.format(path))
-        assert db.Property.__tablename__ == 'properties'
-        assert db.DBModel.__tablename__ == 'models'
-        assert db.DBModelChunk.__tablename__ == 'model_chunks'
-
     def test_table_postfix(self, Database, request):
         path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
         request.addfinalizer(lambda: os.remove(path))
@@ -611,6 +579,13 @@ class TestDatabase:
         request.addfinalizer(lambda: os.remove(path))
         db = Database('sqlite:///{}'.format(path), poolclass=QueuePool)
         assert isinstance(db.engine.pool, QueuePool)
+
+
+class TestDatabaseCLOB(TestDatabase):
+    @pytest.fixture
+    def Database(self):
+        from palladium.persistence import DatabaseCLOB
+        return DatabaseCLOB
 
 
 class TestCachedUpdatePersister:
