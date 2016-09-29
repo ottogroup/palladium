@@ -6,7 +6,6 @@ from threading import Thread
 from unittest.mock import Mock
 from unittest.mock import MagicMock
 from unittest.mock import patch
-from time import sleep
 
 import pytest
 
@@ -559,6 +558,14 @@ class TestDatabase:
         assert database.list_properties() == {
             'db-version': '1.0', 'active-model': '2'}
 
+    def test_table_postfix_default(self, Database, request):
+        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
+        request.addfinalizer(lambda: os.remove(path))
+        db = Database('sqlite:///{}'.format(path))
+        assert db.Property.__tablename__ == 'properties'
+        assert db.DBModel.__tablename__ == 'models'
+        assert db.DBModelChunk.__tablename__ == 'model_chunks'
+
     def test_table_postfix(self, Database, request):
         path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
         request.addfinalizer(lambda: os.remove(path))
@@ -566,6 +573,20 @@ class TestDatabase:
         assert db.Property.__tablename__ == 'properties_fix'
         assert db.DBModel.__tablename__ == 'models_fix'
         assert db.DBModelChunk.__tablename__ == 'model_chunks_fix'
+
+    def test_init_poolclass_default(self, Database, request):
+        from sqlalchemy.pool import NullPool
+        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
+        request.addfinalizer(lambda: os.remove(path))
+        db = Database('sqlite:///{}'.format(path))
+        assert isinstance(db.engine.pool, NullPool)
+
+    def test_init_poolclass_set(self, Database, request):
+        from sqlalchemy.pool import QueuePool
+        path = '/tmp/palladium.testing-{}.sqlite'.format(os.getpid())
+        request.addfinalizer(lambda: os.remove(path))
+        db = Database('sqlite:///{}'.format(path), poolclass=QueuePool)
+        assert isinstance(db.engine.pool, QueuePool)
 
 
 class TestDatabaseCLOB(TestDatabase):

@@ -21,6 +21,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from sqlalchemy.types import TypeDecorator
 
 from . import __version__
@@ -187,12 +188,18 @@ class Database(ModelPersister):
 
     upgrade_steps = UpgradeSteps()
 
-    def __init__(self, url, chunk_size=1024 ** 2 * 100, table_postfix=''):
+    def __init__(
+            self, url, poolclass=None, chunk_size=1024 ** 2 * 100,
+            table_postfix=''):
         """
         :param str url:
           The database *url* that'll be used to make a connection.
           Format follows RFC-1738.  I'll create a table ``models`` to
           store the pickles in if it doesn't exist yet.
+
+        :param sqlalchemy.pool.Pool poolclass:
+          A class specifying DB connection behavior of the engine. If set to
+          None, the NullPool will be used.
 
         :param int chunk_size:
           The pickled contents of the model are stored inside the
@@ -203,7 +210,9 @@ class Database(ModelPersister):
           If *table_postfix* is provided, I will append it to the
           table name of all tables used in this instance.
         """
-        engine = create_engine(url)
+        if not poolclass:
+            poolclass = NullPool
+        engine = create_engine(url, poolclass=poolclass)
         self.engine = engine
         self.chunk_size = chunk_size
         self.table_postfix = table_postfix
