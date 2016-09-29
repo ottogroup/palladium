@@ -51,14 +51,4 @@
             ('petal width', 'float'),
         ],
     },
-
-    'entry_points': {
-        '__factory__': 'palladium.server.EntryPointManager',
-        'mapping': {
-            '/predict': {
-                'predict_service_name': 'predict_service',
-                'decorator_list_name': 'predict_decorators',
-            },
-        },
-    },
 }
