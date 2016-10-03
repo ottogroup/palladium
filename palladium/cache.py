@@ -6,6 +6,7 @@ database.
 """
 
 import hashlib
+from functools import wraps
 import os
 import pickle
 
@@ -25,6 +26,7 @@ class abstractcache(object):
         self.ignore = ignore
 
     def __call__(self, func):
+        @wraps(func)
         def wrapped(*args, **kwargs):
             if self.ignore() if callable(self.ignore) else self.ignore:
                 return func(*args, **kwargs)
