@@ -382,7 +382,7 @@ model's version:
 Predict service
 ---------------
 
-The last component in the Iris example configuration is called
+The next component in the Iris example configuration is called
 ``predict_service``.  The :class:`palladium.interfaces.PredictService` is
 the workhorse behind what us happening in the ``/predict`` HTTP
 endpoint.  Let us take a look at how it is configured:
@@ -456,6 +456,51 @@ like, you would override the
 :meth:`~palladium.server.PredictService.response_from_prediction` and
 :meth:`~palladium.server.PredictService.response_from_exception` methods,
 which are responsible for creating the JSON responses.
+
+
+Customizing entry points for predict services
+---------------------------------------------
+
+Predict service specifications can be customized by setting the
+``entry_point`` and ``decorator_list_name`` in the configuration. It
+is also possible to specify more than one predict service which can be
+reached by different entry points, e.g., if a model should be used in
+two different contexts with different parameters or response
+formats. This is an example how to specify two predict services with
+different entry points:
+
+.. code-block:: python
+
+    'predict_service1': {
+        '__factory__': 'mypackage.server.PredictService',
+        'mapping': [
+            ('sepal length', 'float'),
+            ('sepal width', 'float'),
+            ('petal length', 'float'),
+            ('petal width', 'float'),
+            ],
+	'entry_point': '/predict',
+	'decorator_list_name': 'predict_decorators',
+        }
+    'predict_service2': {
+        '__factory__': 'mypackage.server.PredictServiceID',
+        'mapping': [
+            ('id', 'int'),
+            ],
+	'entry_point': '/predict-by-id',
+	'decorator_list_name': 'predict_decorators_id',
+        }
+
+It is not necessary that the decorator list as specified by
+``decorator_list_name`` is defined in the configuration; if it does
+not exist, no decorators will be used for this predict service.
+
+.. note::
+
+  If ``entry_point`` and ``decorator_list_name`` are omitted,
+  ``/predict`` and ``predict_decorators`` will be used as default
+  values, leading to the same behavior as it was the case in earlier
+  Palladium versions.
 
 
 Implementing the model as a pipeline

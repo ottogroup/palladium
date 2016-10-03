@@ -147,6 +147,7 @@ class TestInitializeConfig:
                                      initialize_config):
         config.clear()
         initialize_config(two='three')
+
         assert config['two'] == 'three'
 
     def test_initialize_config_already_initialized(self, config,

@@ -4,6 +4,7 @@ import json
 import math
 from threading import Thread
 from unittest.mock import Mock
+from unittest.mock import mock_open
 from unittest.mock import patch
 
 import dateutil.parser
@@ -12,6 +13,13 @@ import numpy as np
 import pytest
 import ujson
 from werkzeug.exceptions import BadRequest
+
+
+def dec(func):
+    def inner(*args, **kwargs):
+        """dec"""
+        return func(*args, **kwargs) + '_decorated'
+    return inner
 
 
 class TestPredictService:
@@ -236,6 +244,105 @@ class TestPredictService:
 
         assert json.loads(resp.get_data(as_text=True)) == expected_resp_data
 
+    @pytest.yield_fixture
+    def mock_predict(self, monkeypatch):
+        def mock_predict(model_persister, predict_service):
+            return predict_service.entry_point
+        monkeypatch.setattr(
+            'palladium.server.predict', mock_predict)
+        yield mock_predict
+
+    def _initialize_config(self, flask_app_test):
+        # simulate real config (empty dict), otherwise
+        # _initialize_config will not be called
+        with patch('palladium.util.open',
+                   mock_open(read_data=str({})),
+                   create=True):
+            with patch(
+                    'palladium.util.os.environ',
+                    {'PALLADIUM_CONFIG': 'somepath'}
+            ):
+                with flask_app_test.test_request_context():
+                    from palladium.util import initialize_config
+                    initialize_config()
+
+    def test_entry_point_not_set(
+            self, config, flask_app_test, flask_client, mock_predict):
+        config['model_persister'] = Mock()
+        config['predict_service'] = {
+            '__factory__': 'palladium.server.PredictService',
+            'mapping': [
+                ('param', 'str'),
+            ],
+        }
+        # set default predict_decorators
+        config['predict_decorators'] = ['palladium.tests.test_server.dec']
+
+        self._initialize_config(flask_app_test)
+
+        resp1 = flask_client.get(
+            'predict?param=bla')
+
+        # decorated result: default predict_decorators is defined
+        assert resp1.get_data().decode('utf-8') == '/predict_decorated'
+
+    def test_entry_point_multiple(
+            self, config, flask_app_test, flask_client, mock_predict):
+        config['model_persister'] = Mock()
+        config['my_predict_service'] = {
+            '__factory__': 'palladium.server.PredictService',
+            'mapping': [
+                ('param', 'str'),
+            ],
+            'entry_point': '/predict1',
+        }
+        config['my_predict_service2'] = {
+            '__factory__': 'palladium.server.PredictService',
+            'mapping': [
+                ('param', 'str'),
+            ],
+            'entry_point': '/predict2',
+            'decorator_list_name': 'predict_decorators2',
+        }
+
+        # only second predict service uses decorator list
+        config['predict_decorators2'] = ['palladium.tests.test_server.dec']
+
+        self._initialize_config(flask_app_test)
+
+        resp1 = flask_client.get(
+            'predict1?param=bla')
+
+        # no decorated result: default predict_decorators is not defined
+        assert resp1.get_data().decode('utf-8') == '/predict1'
+
+        resp2 = flask_client.get(
+            'predict2?param=bla')
+
+        # decorated result using predict_decorators2
+        assert resp2.get_data().decode('utf-8') == '/predict2_decorated'
+
+    def test_entry_point_multiple_conflict(
+            self, config, flask_app_test, flask_client, mock_predict):
+        config['model_persister'] = Mock()
+        config['my_predict_service'] = {
+            '__factory__': 'palladium.server.PredictService',
+            'mapping': [
+                ('param', 'str'),
+            ],
+            'entry_point': '/predict1',  # <--
+        }
+        config['my_predict_service2'] = {
+            '__factory__': 'palladium.server.PredictService',
+            'mapping': [
+                ('param', 'str'),
+            ],
+            'entry_point': '/predict1',  # conflict: entry point exists
+        }
+
+        with pytest.raises(AssertionError):
+            self._initialize_config(flask_app_test)
+
 
 class TestPredict:
     @pytest.fixture
@@ -243,11 +350,14 @@ class TestPredict:
         from palladium.server import predict
         return predict
 
-    def test_predict_functional(self, config, flask_app, flask_client):
+    def test_predict_functional(self, config, flask_app_test, flask_client):
         from palladium.server import make_ujson_response
         model_persister = config['model_persister'] = Mock()
         predict_service = config['predict_service'] = Mock()
-        with flask_app.test_request_context():
+        with flask_app_test.test_request_context():
+            from palladium.server import create_predict_function
+            create_predict_function(
+                '/predict', predict_service, 'predict_decorators')
             predict_service.return_value = make_ujson_response(
                 'a', status_code=200)
 
@@ -261,7 +371,7 @@ class TestPredict:
 
         assert resp_data == 'a'
         assert resp.status_code == 200
-        with flask_app.test_request_context():
+        with flask_app_test.test_request_context():
             predict_service.assert_called_with(model, request)
 
     def test_unknown_exception(self, predict, flask_app):
@@ -343,7 +453,7 @@ class TestPredictStream:
         io_in = io.StringIO()
         io_out = io.StringIO()
         io_err = io.StringIO()
- 
+
         stream_thread = Thread(
             target=stream.listen(io_in, io_out, io_err))
         stream_thread.start()
@@ -366,7 +476,7 @@ class TestPredictStream:
         ]
         for line in lines:
             io_in.write(line)
- 
+
         io_in.write('EXIT\n')
         io_in.seek(0)
         predict = stream.predict_service.predict
@@ -397,14 +507,14 @@ class TestPredictStream:
         # check if string representation of attribute can be converted to json
         assert ujson.loads(predict.call_args_list[1][0][1][0]['color']) == {
             "a": 1, "b": 2}
- 
+
     def test_predict_error(self, stream):
         from palladium.interfaces import PredictError
 
         io_in = io.StringIO()
         io_out = io.StringIO()
         io_err = io.StringIO()
- 
+
         line = '[{"hey": "1"}]\n'
         io_in.write(line)
         io_in.write('EXIT\n')

@@ -24,7 +24,6 @@ import psutil
 
 from . import __version__
 
-
 logger = logging.getLogger('palladium')
 
 

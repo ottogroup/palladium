@@ -53,7 +53,10 @@ class PredictService:
         'bool': lambda x: x.lower() == 'true',
         }
 
-    def __init__(self, mapping, params=(), predict_proba=False, **kwargs):
+    def __init__(
+            self, mapping, params=(), entry_point='/predict',
+            decorator_list_name='predict_decorators',
+            predict_proba=False, **kwargs):
         """
         :param mapping:
           A list of query parameters and their type that should be
@@ -80,8 +83,14 @@ class PredictService:
         """
         self.mapping = mapping
         self.params = params
+        self.entry_point = entry_point
+        self.decorator_list_name = decorator_list_name
         self.predict_proba = predict_proba
         vars(self).update(kwargs)
+
+    def initialize_component(self, config):
+        create_predict_function(
+            self.entry_point, self, self.decorator_list_name)
 
     def __call__(self, model, request):
         try:
@@ -187,9 +196,6 @@ class PredictService:
             }, status_code=500)
 
 
-@app.route('/predict', methods=['GET', 'POST'])
-@PluggableDecorator('predict_decorators')
-@args_from_config
 def predict(model_persister, predict_service):
     try:
         model = model_persister.read()
@@ -235,6 +241,35 @@ def alive(alive=None):
             status_code = 503
 
     return make_ujson_response(info, status_code=status_code)
+
+
+def create_predict_function(
+        route, predict_service, decorator_list_name):
+    """Creates a predict function and registers it to
+    the Flask app using the route decorator.
+
+    :param str route:
+      Path of the entry point.
+
+    :param palladium.interfaces.PredictService predict_service:
+      The predict service to be registered to this entry point.
+
+    :param str decorator_list_name:
+      The decorator list to be used for this predict service. It is
+      OK if there is no such entry in the active Palladium config.
+
+    :return:
+      A predict service function that will be used to process
+      predict requests.
+    """
+    model_persister = get_config().get('model_persister')
+
+    @app.route(route, methods=['GET', 'POST'], endpoint=route)
+    @PluggableDecorator(decorator_list_name)
+    def predict_func():
+        return predict(model_persister, predict_service)
+
+    return predict_func
 
 
 def devserver_cmd(argv=sys.argv[1:]):  # pragma: no cover
