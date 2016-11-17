@@ -157,7 +157,7 @@ def grid_search(dataset_loader_train, model, grid_search):
 
     cv = grid_search_kwargs.get('cv', None)
     if callable(cv):
-        grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), y=y)
+        grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
 
     if not (hasattr(model, 'score') or 'scoring' in grid_search_kwargs):
         raise ValueError(
