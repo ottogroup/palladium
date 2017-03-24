@@ -231,6 +231,20 @@ class TestGetConfig:
             assert mycomponent.arg1 == 3
             assert mycomponent.arg2 == '192.168.0.1:666'
 
+    def test_read_here(self, get_config, config):
+        config.initialized = False
+        config_in_str = "{'here': here}"
+
+        with patch('palladium.util.open',
+                   mock_open(read_data=config_in_str),
+                   create=True):
+            with patch('palladium.util.os.environ', {
+                    'PALLADIUM_CONFIG': '/home/megha/somepath.py',
+            }):
+                config_new = get_config()
+
+            assert config_new['here'] == '/home/megha'
+
 
 def test_args_from_config(config):
     from palladium.util import args_from_config
