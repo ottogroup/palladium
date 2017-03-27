@@ -218,17 +218,27 @@ class TestGridSearch:
         grid_search_params = {'verbose': 4}
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
-        scores = [
-            Mock(mean_validation_score=0.1),
-            Mock(mean_validation_score=0.2),
-            ]
+        scores = {'mean_test_score': [0.1, 0.2],
+            'std_test_score': [0.06463643, 0.05073433],
+            'params': [{'C': 0.1}, {'C': 0.3}]}
 
         with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-            GridSearchCV().grid_scores_ = scores
+            GridSearchCV().cv_results_ = scores
             result = grid_search(
                 dataset_loader_train, model, grid_search_params)
 
-        assert result == list(reversed(scores))
+        expected = []
+        expected.append("mean: {0:.5f}, std: {1:.5f}, params: {2}"
+                        .format(
+                            scores['mean_test_score'][0],
+                            scores['std_test_score'][0],
+                            scores['params'][0]))
+        expected.append("mean: {0:.5f}, std: {1:.5f}, params: {2}"
+            .format(
+            scores['mean_test_score'][1],
+            scores['std_test_score'][1],
+            scores['params'][1]))
+        assert result == expected
         dataset_loader_train.assert_called_with()
         GridSearchCV.assert_called_with(model, refit=False, verbose=4)
         GridSearchCV().fit.assert_called_with(X, y)
@@ -252,12 +262,11 @@ class TestGridSearch:
 
         grid_search_params = {'cv': partial(cv_iterator, p=2)}
 
-        scores = [
-            Mock(mean_validation_score=0.1),
-            Mock(mean_validation_score=0.2),
-            ]
+        scores = {'mean_test_score': [0.1, 0.2],
+         'std_test_score': [0.06463643, 0.05073433],
+         'params': [{'C': 0.1}, {'C': 0.3}]}
         with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-            GridSearchCV().grid_scores_ = scores
+            GridSearchCV().cv_results_ = scores
             grid_search(dataset_loader_train, model, grid_search_params)
 
         GridSearchCV.assert_called_with(model, refit=False,
