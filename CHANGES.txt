@@ -1,3 +1,14 @@
+v1.1.0 - 2017-03-27
+========================
+
+- Updated requirements in order to use newer versions of dependencies
+
+- Added Python 3.6 to Travis CI test settings
+
+- Changed deprecated sklearn.grid_search.GridSearchCV to actual 
+  sklearn.model_selection.GridSearchCV 
+
+
 v1.0.1.dev1 - 2016-03-04
 ========================
 
