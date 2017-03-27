@@ -218,15 +218,12 @@ class TestGridSearch:
         grid_search_params = {'verbose': 4}
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
-
         scores = {'mean_test_score': [0.1, 0.2],
             'std_test_score': [0.06463643, 0.05073433],
             'params': [{'C': 0.1}, {'C': 0.3}]}
 
         with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-
             GridSearchCV().cv_results_ = scores
-
             result = grid_search(
                 dataset_loader_train, model, grid_search_params)
 
@@ -241,7 +238,6 @@ class TestGridSearch:
             scores['mean_test_score'][1],
             scores['std_test_score'][1],
             scores['params'][1]))
-
         assert result == expected
         dataset_loader_train.assert_called_with()
         GridSearchCV.assert_called_with(model, refit=False, verbose=4)
@@ -269,11 +265,6 @@ class TestGridSearch:
         scores = {'mean_test_score': [0.1, 0.2],
          'std_test_score': [0.06463643, 0.05073433],
          'params': [{'C': 0.1}, {'C': 0.3}]}
-
-
-
-
-
         with patch('palladium.fit.GridSearchCV') as GridSearchCV:
             GridSearchCV().cv_results_ = scores
             grid_search(dataset_loader_train, model, grid_search_params)

@@ -7,7 +7,6 @@ from datetime import datetime
 from docopt import docopt
 from pprint import pformat
 from sklearn.model_selection import GridSearchCV
-from collections import namedtuple
 
 from .interfaces import annotate
 from .util import apply_kwargs
@@ -148,7 +147,6 @@ Options:
 
 @args_from_config
 def grid_search(dataset_loader_train, model, grid_search):
-    # import pdb; pdb.set_trace()
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
@@ -176,7 +174,6 @@ def grid_search(dataset_loader_train, model, grid_search):
     stds = gs.cv_results_['std_test_score']
     for mean, std, params in zip(means, stds, gs.cv_results_['params']):
         scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, params))
-
     logger.info("\n{}".format(pformat(scores)))
     return scores
 
