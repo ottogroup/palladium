@@ -223,7 +223,7 @@ class TestGridSearch:
             'std_test_score': [0.06463643, 0.05073433],
             'params': [{'C': 0.1}, {'C': 0.3}]}
 
-      with patch('palladium.fit.GridSearchCV') as GridSearchCV:
+        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
 
             GridSearchCV().cv_results_ = scores
 
