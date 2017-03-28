@@ -9,8 +9,8 @@ v1.1.0 - 2017-03-27
 
 - Added support for nested lists in configuration
 
-- Added `here` entry to configuration pointing to the parent path of
-  the current configuration file
+- Added `here` variable to be used in configuration pointing to the
+  parent path of the current configuration file
 
 - Added support for PluggableDecorators to DatasetLoaders
   ('load_data_decorators' in config)
