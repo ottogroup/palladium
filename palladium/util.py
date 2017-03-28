@@ -83,7 +83,10 @@ def get_config(**extra):
             for fname in fnames:
                 with open(fname) as f:
                     _config.update(
-                        eval(f.read(), {'environ': os.environ})
+                        eval(f.read(), {
+                            'environ': os.environ,
+                            'here': os.path.abspath(os.path.dirname(fname)),
+                            })
                         )
             _initialize_config(_config)
 
