@@ -551,3 +551,15 @@ by ``clf__`` to tell the pipeline that we want to the set a parameter
 of the ``clf`` part of the pipeline. If you want to used grid search
 with this pipeline, keep in mind that you will also need to adapt the
 parameter's name in the grid search section to `clf_C`.
+
+It is also possible to use nested lists in configurations. With this
+feature, pipelines can be also defined purely through the
+configuration file, e.g.:
+
+.. code-block:: python
+
+    'model': {
+        '__factory__': 'sklearn.pipeline.Pipeline',
+        'steps': [['clf', {'__factory__': 'sklearn.linear_model.LinearRegression'}],
+        ],
+    },

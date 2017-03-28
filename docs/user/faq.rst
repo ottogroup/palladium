@@ -54,13 +54,14 @@ Similar to adding authentication support, we suggest to use the
 different pluggable decorator lists in order to send logging or
 monitoring messages to the corresponding systems. You need to
 implement decorators which wrap the different functions and then send
-information as needed to your logging or monitoring
-solution. Every time, one of the functions is called, the decorators in
-the decorator lists will also be called and can thus be used to
-generate logging messages as needed. Let us assume you have
-implemented the decorators `my_app.log.predict`, `my_app.log.alive`,
-`my_app.log.fit`, and `my_app.log.update_model`, you can add them to
-your application by adding the following parts to the configuration:
+information as needed to your logging or monitoring solution. Every
+time, one of the functions is called, the decorators in the decorator
+lists will also be called and can thus be used to generate logging
+messages as needed. Let us assume you have implemented the decorators
+`my_app.log.predict`, `my_app.log.alive`, `my_app.log.fit`,
+`my_app.log.update_model`, and `my_app.log.load_data`, you can add
+them to your application by adding the following parts to the
+configuration:
 
 .. code-block:: python
 
@@ -80,12 +81,19 @@ your application by adding the following parts to the configuration:
         'my_app.log.fit',
         ],
 
+    'load_data_decorators': [
+        'my_app.log.load_data',
+        ],
+
+
 .. _virtual-env:
 
 How can I use Python 3 without messing up with my Python 2 projects?
 ====================================================================
 
-If you currently use an older version of Python or even need this older version for other projects, you should take a look at virtual environments.
+If you currently use an older version of Python or even need this
+older version for other projects, you should take a look at virtual
+environments.
 
 If you use the default Python version, you could use `virtualenv`:
 
@@ -96,7 +104,8 @@ If you use the default Python version, you could use `virtualenv`:
 #. virtualenv -p /usr/local/bin/python3 palladium
 #. source <virtual_env_folder>/palladium/bin/activate
 
-If you use Anaconda, you can use the conda environments which can be created and activated as follows:
+If you use Anaconda, you can use the conda environments which can be
+created and activated as follows:
 
 #. conda create -n palladium python=3 anaconda
 #. source activate palladium
@@ -124,7 +133,9 @@ Where can I find information if there are problems installing numpy, scipy, or s
 
 In the general case, the installation should work without problems if
 you are using Anaconda or have already installed these packages as
-provided with your operating system's distribution. In case there are problems during installation, we refer to the installation instructions of these projects:
+provided with your operating system's distribution. In case there are
+problems during installation, we refer to the installation
+instructions of these projects:
 
 * `numpy / scipy <http://www.scipy.org/install.html>`_
 * `scikit-learn <http://scikit-learn.org/stable/install.html>`_
@@ -152,3 +163,89 @@ passed at runtime.
         'verbose': 4,
         'n_jobs': -1,
         }
+
+Is there any way to use a base configuration for different settings?
+====================================================================
+
+Since Palladium 1.0.1 you can use a list of configuration files in the
+``PALLADIUM_CONFIG`` environment variable. During initialization, the
+list will be processed successively and the configuration dict will be
+updated using the configuration files from left to right.
+
+If we use a list of two configurations like
+``PALLADIUM_CONFIG=mypath/mybaseconfig.py,mypath/myconfig.py``, the
+entries in the configuration files later in the list will override the
+ones defined before. E.g., if the contents of
+``mypath/mybaseconfig.py`` is ``{'a': 42, 'b': 6}``" and the contents
+of ``mypath/myconfig.py`` is ``{'b': 7, 'c': 99}``, then the resulting
+configuration will be ``{'a': 42, 'b': 7, 'c': 99}``.
+
+
+Can I somehow track the location of the configuration file?
+===========================================================
+
+You can use the `here` variable in a configuration file in order to
+refer to the location, e.g.:
+
+.. code-block:: python
+
+    {
+	...
+	'config_path': here,
+	...
+    }
+
+After initialization, this variable will point to the folder where the
+configuration file is located. In the example, eeading the value of
+`config_path` will give you a string of the path to the folder:
+
+.. code-block:: python
+
+    from palladium.util import get_config
+    get_config()['config_path']  % -> config folder path
+
+
+How can I use test Palladium components in a shell?
+===================================================
+
+If you want to interactively check components of your Palladium
+configuration, you can access Palladium's components as follows:
+
+.. code-block:: python
+
+    from palladium.util import initialize_config
+
+    config = initialize_config(__mode__='fit')
+    model = config['model']  # get model
+    X, y = config['dataset_loader_train']()  # load training data
+    # ...
+
+You can also load the configuration to an interactive shell and access
+the components directly:
+
+.. code-block:: python
+
+    from code import InteractiveConsole
+    from pprint import pformat
+
+    from palladium.util import initialize_config
+
+    if __name__ == "__main__":
+	config = initialize_config(__mode__='fit')
+	banner = 'Palladium config:\n{}'.format(pformat(config))
+	InteractiveConsole(config).interact(banner=banner)
+
+
+In the interactive console, loading data and fitting a model can be
+done like this:
+
+.. code-block:: python
+
+    X, y = dataset_loader_train()
+    model.fit(X, y)
+
+
+.. note::
+
+  Make sure, the ``PALLADIUM_CONFIG`` environment variable is pointing
+  to a valid configuration file.
