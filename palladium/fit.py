@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 from docopt import docopt
 from pprint import pformat
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 from .interfaces import annotate
 from .util import apply_kwargs
@@ -169,7 +169,11 @@ def grid_search(dataset_loader_train, model, grid_search):
         gs = GridSearchCV(model, **grid_search_kwargs)
         gs.fit(X, y)
 
-    scores = sorted(gs.grid_scores_, key=lambda x: -x.mean_validation_score)
+    scores = []
+    means = gs.cv_results_['mean_test_score']
+    stds = gs.cv_results_['std_test_score']
+    for mean, std, params in zip(means, stds, gs.cv_results_['params']):
+        scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, params))
     logger.info("\n{}".format(pformat(scores)))
     return scores
 
