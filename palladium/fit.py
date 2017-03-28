@@ -172,9 +172,11 @@ def grid_search(dataset_loader_train, model, grid_search):
     scores = []
     means = gs.cv_results_['mean_test_score']
     stds = gs.cv_results_['std_test_score']
-    for mean, std, params in zip(means, stds, gs.cv_results_['params']):
-        scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, params))
-    logger.info("\n{}".format(pformat(scores)))
+    params = gs.cv_results_['params']
+    for mean, std, param in zip(means, stds, params):
+        scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, param))
+    logger.info('\n{}'.format(
+        pformat(sorted(scores, reverse=True)).replace('"', '')))
     return scores
 
 
