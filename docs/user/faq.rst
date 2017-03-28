@@ -249,3 +249,25 @@ done like this:
 
   Make sure, the ``PALLADIUM_CONFIG`` environment variable is pointing
   to a valid configuration file.
+
+
+How can I access the active model in my code?
+=============================================
+
+If you want to access the currently used model, you have to retrieve
+it via the ``process_store`` or you have to load it using the model
+persister:
+
+.. code-block:: python
+
+    from palladium.util import process_store
+    model = process_store.get('model')
+
+    from palladium.util import get_config
+    model = get_config()['model_persister'].read()
+
+.. note::
+
+   ``get_config()['model']`` might not return the current active model
+   as the entries in the configuration are not updated after
+   initialization.
