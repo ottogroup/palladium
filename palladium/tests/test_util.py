@@ -1,6 +1,8 @@
 from datetime import datetime
 from time import sleep
 from unittest.mock import Mock
+from unittest.mock import MagicMock
+from unittest.mock import call
 from unittest.mock import mock_open
 from unittest.mock import patch
 
@@ -62,17 +64,18 @@ class TestInitializeConfigImpl:
         return _initialize_config
 
     def test_initialize_config(self, _initialize_config):
+        dummy = 'palladium.tests.test_util.MyDummyComponent'
         config = {
             'mycomponent': {
-                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                '__factory__': dummy,
                 'arg1': 3,
                 'arg2': {'no': 'factory'},
                 'subcomponent': {
-                    '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                    '__factory__': dummy,
                     'arg1': {
                         'subsubcomponent': {
                             '__factory__':
-                            'palladium.tests.test_util.MyDummyComponent',
+                            dummy,
                             'arg1': 'wobwob',
                             'arg2': 9,
                             },
@@ -81,11 +84,19 @@ class TestInitializeConfigImpl:
                     },
                 },
             'mylistofcomponents': [{
-                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
+                '__factory__': dummy,
                 'arg1': 'wobwob',
                 },
                 'somethingelse',
                 ],
+            'mynestedlistofcomponents': [[{
+                '__factory__': dummy,
+                'arg1': 'feep',
+                'arg2': {
+                    '__factory__': dummy,
+                    'arg1': 6,
+                },
+            }]],
             'myconstant': 42,
             }
 
@@ -115,6 +126,11 @@ class TestInitializeConfigImpl:
         assert mylistofcomponents[0].arg1 == 'wobwob'
         assert mylistofcomponents[1] == 'somethingelse'
 
+        mnl = config['mynestedlistofcomponents']
+        assert isinstance(mnl[0][0], MyDummyComponent)
+        assert mnl[0][0].arg1 == 'feep'
+        assert isinstance(mnl[0][0].arg2, MyDummyComponent)
+
     def test_initialize_config_logging(self, _initialize_config):
         with patch('palladium.util.dictConfig') as dictConfig:
             _initialize_config({'logging': 'yes, please'})
@@ -131,6 +147,7 @@ class TestInitializeConfig:
                                      initialize_config):
         config.clear()
         initialize_config(two='three')
+
         assert config['two'] == 'three'
 
     def test_initialize_config_already_initialized(self, config,
@@ -168,6 +185,25 @@ class TestGetConfig:
             assert isinstance(mycomponent, MyDummyComponent)
             assert mycomponent.arg1 == 3
 
+    def test_read_multiple_files(self, get_config, config):
+        config.initialized = False
+
+        fake_open = MagicMock()
+        fake_open.return_value.__enter__.return_value.read.side_effect = [
+            "{'a': 42, 'b': 6}", "{'b': 7}"
+            ]
+        with patch('palladium.util.open', fake_open, create=True):
+            with patch('palladium.util.os.environ', {
+                'PALLADIUM_CONFIG': 'somepath, andanother',
+                    }):
+                config_new = get_config()
+
+        assert config_new == {'a': 42, 'b': 7}
+
+        # Files later in the list override files earlier in the list:
+        assert fake_open.call_args_list == [
+            call('somepath'), call('andanother')]
+
     def test_read_environ(self, get_config, config):
         config.initialized = False
         config_in_str = """
@@ -194,6 +230,20 @@ class TestGetConfig:
             assert isinstance(mycomponent, MyDummyComponent)
             assert mycomponent.arg1 == 3
             assert mycomponent.arg2 == '192.168.0.1:666'
+
+    def test_read_here(self, get_config, config):
+        config.initialized = False
+        config_in_str = "{'here': here}"
+
+        with patch('palladium.util.open',
+                   mock_open(read_data=config_in_str),
+                   create=True):
+            with patch('palladium.util.os.environ', {
+                    'PALLADIUM_CONFIG': '/home/megha/somepath.py',
+            }):
+                config_new = get_config()
+
+            assert config_new['here'] == '/home/megha'
 
 
 def test_args_from_config(config):
@@ -265,9 +315,11 @@ class TestProcessStore:
     def test_mtime_setitem(self, store):
         dt0 = datetime.now()
         store['somekey'] = '1'
+        sleep(0.001)  # make sure that we're not too fast
         dt1 = datetime.now()
         assert dt0 < store.mtime['somekey'] < dt1
         store['somekey'] = '2'
+        sleep(0.001)  # make sure that we're not too fast
         dt2 = datetime.now()
         assert dt1 < store.mtime['somekey'] < dt2
 

@@ -7,6 +7,7 @@ from abc import ABCMeta
 from sklearn.base import BaseEstimator
 
 from . import __version__
+from .util import PluggableDecorator
 
 
 def annotate(obj, metadata=None):
@@ -17,7 +18,13 @@ def annotate(obj, metadata=None):
     return obj.__metadata__
 
 
-class DatasetLoader(metaclass=ABCMeta):
+class DatasetLoaderMeta(ABCMeta):
+    def __init__(cls, name, bases, attrs, **kwargs):
+        super().__init__(name, bases, attrs, **kwargs)
+        cls.__call__ = PluggableDecorator('load_data_decorators')(cls.__call__)
+
+
+class DatasetLoader(metaclass=DatasetLoaderMeta):
     """A :class:`~palladium.interfaces.DatasetLoader` is responsible for
     loading datasets for use in training and evaluation.
     """

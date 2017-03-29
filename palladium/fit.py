@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 from docopt import docopt
 from pprint import pformat
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 from .interfaces import annotate
 from .util import apply_kwargs
@@ -157,7 +157,7 @@ def grid_search(dataset_loader_train, model, grid_search):
 
     cv = grid_search_kwargs.get('cv', None)
     if callable(cv):
-        grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), y=y)
+        grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
 
     if not (hasattr(model, 'score') or 'scoring' in grid_search_kwargs):
         raise ValueError(
@@ -169,8 +169,14 @@ def grid_search(dataset_loader_train, model, grid_search):
         gs = GridSearchCV(model, **grid_search_kwargs)
         gs.fit(X, y)
 
-    scores = sorted(gs.grid_scores_, key=lambda x: -x.mean_validation_score)
-    logger.info("\n{}".format(pformat(scores)))
+    scores = []
+    means = gs.cv_results_['mean_test_score']
+    stds = gs.cv_results_['std_test_score']
+    params = gs.cv_results_['params']
+    for mean, std, param in zip(means, stds, params):
+        scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, param))
+    logger.info('\n{}'.format(
+        pformat(sorted(scores, reverse=True)).replace('"', '')))
     return scores
 
 

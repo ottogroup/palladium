@@ -52,6 +52,7 @@ MOCK_MODULES = [
     'sqlalchemy.ext',
     'sqlalchemy.ext.declarative',
     'sqlalchemy.orm',
+    'sqlalchemy.types',
     'ujson',
     'werkzeug',
     'werkzeug.exceptions',
@@ -78,7 +79,7 @@ version_filename = os.path.join(project_dir, 'VERSION')
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if on_rtd:
-    os.system("sphinx-apidoc -f -o modules ../palladium")
+    os.system("sphinx-apidoc -f -o modules ../palladium ../palladium/tests/")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -136,7 +137,7 @@ release = version
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**tests**']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

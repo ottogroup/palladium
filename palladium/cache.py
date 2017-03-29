@@ -6,6 +6,7 @@ database.
 """
 
 import hashlib
+from functools import wraps
 import os
 import pickle
 
@@ -25,6 +26,7 @@ class abstractcache(object):
         self.ignore = ignore
 
     def __call__(self, func):
+        @wraps(func)
         def wrapped(*args, **kwargs):
             if self.ignore() if callable(self.ignore) else self.ignore:
                 return func(*args, **kwargs)
@@ -60,6 +62,21 @@ class diskcache(abstractcache):
     you to purge existing cached values, then those cache files are
     found in the location defined in :attr:`filename_tmpl`.
     """
+    def __init__(self, *args, filename_tmpl=None, **kwargs):
+        """
+        :param str filename_tmpl:
+          The filename template that I will use to store cache files,
+          e.g. ``{}``.
+        """.format(diskcache.filename_tmpl)
+        super().__init__(*args, **kwargs)
+        if filename_tmpl is not None:
+            if '{key}' not in filename_tmpl:
+                raise ValueError(
+                    "Your filename_tmpl must have a {key} placeholder,"
+                    "e.g., cache-{key}.pickle."
+                    )
+            self.filename_tmpl = filename_tmpl
+
     #: Where to persist cached values
     filename_tmpl = '/tmp/cache-{module}.{func}-{key}.pickle'
 
@@ -105,3 +122,9 @@ class picklediskcache(diskcache):
     def dump(self, value, filename):
         with open(filename, 'wb') as f:
             return pickle.dump(value, f, -1)
+
+
+def compute_key_attrs(attrs):
+    def compute_key(self, *args, **kwargs):
+        return tuple(getattr(self, attr) for attr in attrs)
+    return compute_key

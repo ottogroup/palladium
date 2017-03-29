@@ -9,12 +9,14 @@ pytest_plugins = 'palladium'
 
 
 @pytest.mark.slow
-def test_functional():
+def test_functional(flask_app_test):
     config_fname = os.path.join(
         os.path.dirname(__file__),
         'config.py',
-        )
-    run_smoke_tests_with_config(config_fname, run=['fit', 'test', 'predict'])
+    )
+    with flask_app_test.test_request_context():
+        run_smoke_tests_with_config(
+            config_fname, run=['fit', 'test', 'predict'])
 
 
 if __name__ == '__main__':

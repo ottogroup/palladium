@@ -1,5 +1,37 @@
-v1.0.1.dev1 - 2016-03-04
-========================
+v1.1.0 - 2017-03-27
+===================
+
+- Added multiple confuration file support, i.e., PALLADIUM_CONFIG can
+  now point to a list of configuration files where the configuration
+  dict is updated successively
+
+- Added functionality to handle multiple predict service entry points
+
+- Added support for nested lists in configuration
+
+- Added `here` variable to be used in configuration pointing to the
+  parent path of the current configuration file
+
+- Added support for PluggableDecorators to DatasetLoaders
+  ('load_data_decorators' in config)
+
+- Added module to be used with WSGI servers initializing configuration
+  without delay
+
+- Added parameter for poolclass in sqlalchemy create_engine call in
+  Database model persister. Default poolclass is set to None now to
+  avoid DB connections being open for longer time periods
+
+- Updated requirements in order to use newer versions of dependencies
+
+- Added Python 3.6 to Travis CI test settings
+
+- Changed deprecated sklearn.grid_search.GridSearchCV to current 
+  sklearn.model_selection.GridSearchCV 
+
+
+v1.0.1 - 2016-03-04
+===================
 
 - Updated requirements in order to use newer versions of dependencies
 
