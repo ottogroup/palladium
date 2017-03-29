@@ -315,9 +315,11 @@ class TestProcessStore:
     def test_mtime_setitem(self, store):
         dt0 = datetime.now()
         store['somekey'] = '1'
+        sleep(0.001)  # make sure that we're not too fast
         dt1 = datetime.now()
         assert dt0 < store.mtime['somekey'] < dt1
         store['somekey'] = '2'
+        sleep(0.001)  # make sure that we're not too fast
         dt2 = datetime.now()
         assert dt1 < store.mtime['somekey'] < dt2
 
