@@ -1,10 +1,10 @@
-flask==0.12
-Jinja2==2.9.5
-MarkupSafe==0.23
-Werkzeug==0.12
 docopt==0.6.2
+flask==0.12
 itsdangerous==0.24
+Jinja2==2.9.5
 joblib==0.9.4
+# julia==0.4.5
+MarkupSafe==0.23
 numpy==1.12.1
 pandas==0.19.2
 psutil==5.2.0
@@ -15,5 +15,4 @@ scipy==0.19.0
 six==1.10.0
 sqlalchemy==1.1.6
 ujson==1.35
-# julia==0.4.5
-ncurses==5.9
+Werkzeug==0.12
