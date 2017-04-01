@@ -1,3 +1,8 @@
+v1.1.0.1 - 2017-04-01
+=====================
+
+- Added MANIFEST.in to include VERSION file to distribution
+
 v1.1.0 - 2017-03-27
 ===================
 
