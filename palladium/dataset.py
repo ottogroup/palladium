@@ -1,10 +1,14 @@
 """:class:`~palladium.interfaces.DatasetLoader` implementations.
 """
 
+import hashlib
+from pprint import pformat
+
 import pandas.io.parsers
 import pandas.io.sql
 from sqlalchemy import create_engine
 
+from .cache import diskcache
 from .interfaces import DatasetLoader
 from .util import logger
 from .util import PluggableDecorator
@@ -167,3 +171,53 @@ class ScheduledDatasetLoader(DatasetLoader):
         data = self.impl()
         self.cache[self.key] = data
         return data
+
+
+class DiskCacheDatasetLoader(DatasetLoader):
+    """A :class:`~palladium.interfaces.DatasetLoader` that stores a
+    pickle of the data to disk.
+
+    :class:`~DiskCacheDatasetLoader` wraps another
+    :class:`~palladium.interfaces.DatasetLoader` class that it uses to
+    do the actual loading of the data.
+
+    The underlying implementation's ``__dict__`` is used to derive a
+    cache key.
+    """
+    def __init__(self,
+                 impl,
+                 path,
+                 attrs=(),
+                 ):
+        """
+        :param palladium.interfaces.DatasetLoader impl:
+          The underlying (decorated) dataset loader object.
+
+        :param str path:
+          The *path* template that I will use to store cache,
+          e.g. ``/path/to/cache-{key}``.
+
+        :param list attrs:
+          The attributes on the implementation *impl* that will
+          contribute to the cache key, e.g.,
+          ``['engine', 'sql', 'target_column']``.
+        """
+        if '{key}' not in path:
+            raise ValueError(
+                "Your dataset loader path must have a hash {key} placeholder,"
+                "e.g., /tmp/cache-{key}."
+                )
+        self.impl = impl
+        self.cache = diskcache()
+        self.cache.filename_tmpl = path
+        self.cache.func = impl.__call__
+        self.key = tuple(getattr(self.impl, attr) for attr in attrs)
+
+    def __call__(self):
+        try:
+            value = self.cache[self.key]
+            logger.info("{}: Dataset retrieved from cache.".format(
+                self.__class__.__name__))
+        except KeyError:
+            value = self.cache[self.key] = self.impl()
+        return value
