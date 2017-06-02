@@ -5,6 +5,7 @@ from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
+from functools import update_wrapper
 from functools import wraps
 import logging
 from logging.config import dictConfig
@@ -384,4 +385,6 @@ def Partial(func, **kwargs):
     """
     if isinstance(func, str):
         func = resolve_dotted_name(func)
-    return partial(func, **kwargs)
+    partial_func = partial(func, **kwargs)
+    update_wrapper(partial_func, func)
+    return partial_func
