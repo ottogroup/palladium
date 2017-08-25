@@ -16,4 +16,3 @@ six==1.10.0
 sqlalchemy==1.1.6
 ujson==1.35
 # julia==0.4.5
-ncurses==5.9
