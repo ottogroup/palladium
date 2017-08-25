@@ -1,8 +1,7 @@
-import pytest
-from unittest.mock import MagicMock
-from unittest.mock import call
-from unittest.mock import mock_open
+import os
 from unittest.mock import patch
+
+import pytest
 
 
 class MyDummyComponent:
@@ -15,17 +14,13 @@ class MyDummyComponent:
     def initialize_component(self, config):
         self.initialize_component_arg = config
 
-
-def test_create_component():
-    from palladium.config import create_component
-
-    result = create_component({
-        '__factory__': 'palladium.tests.test_config.MyDummyComponent',
-        'arg1': 3,
-        })
-    assert isinstance(result, MyDummyComponent)
-    assert result.arg1 == 3
-    assert result.arg2 == 'blargh'
+    def __eq__(self, other):
+        return all([
+            self.arg1 == other.arg1,
+            self.arg2 == other.arg2,
+            self.subcomponent == other.subcomponent,
+            self.initialize_component_arg == other.initialize_component_arg,
+            ])
 
 
 def test_config_class_keyerror():
@@ -35,15 +30,73 @@ def test_config_class_keyerror():
     assert "Maybe you forgot to set" in str(e.value)
 
 
-class TestInitializeConfigImpl:
+class TestInitializeConfig:
     @pytest.fixture
-    def _initialize_config(self):
-        from palladium.config import _initialize_config
-        return _initialize_config
+    def initialize_config(self):
+        from palladium.config import initialize_config
+        return initialize_config
 
-    def test_initialize_config(self, _initialize_config):
+    def test_extra(self, config, initialize_config):
+        config.clear()
+        initialize_config(two='three')
+        assert config['two'] == 'three'
+
+    def test_already_initialized(self, config, initialize_config):
+        config.clear()
+        config.initialized = True
+        with pytest.raises(RuntimeError):
+            initialize_config(two='three')
+
+
+class TestGetConfig:
+    @pytest.fixture
+    def get_config(self):
+        from palladium.config import get_config
+        return get_config
+
+    @pytest.fixture
+    def config1_fname(self, tmpdir):
+        path = tmpdir.join('config1.py')
+        path.write("{'env': environ['ENV1'], 'here': here}")
+        return str(path)
+
+    @pytest.fixture
+    def config2_fname(self, tmpdir):
+        path = tmpdir.join('config2.py')
+        path.write("{'env': environ['ENV2']}")
+        return str(path)
+
+    def test_extras(self, get_config):
+        assert get_config(foo='bar')['foo'] == 'bar'
+
+    def test_variables(self, get_config, config1_fname, monkeypatch):
+        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config1_fname)
+        monkeypatch.setitem(os.environ, 'ENV1', 'one')
+        config = get_config()
+        assert config['env'] == 'one'
+        assert config['here'] == os.path.dirname(config1_fname)
+
+    def test_multiple_files(self, get_config, config1_fname, config2_fname,
+                            monkeypatch):
+        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG',
+                            ','.join([config1_fname, config2_fname]))
+        monkeypatch.setitem(os.environ, 'ENV1', 'one')
+        monkeypatch.setitem(os.environ, 'ENV2', 'two')
+        config = get_config()
+        assert config['env'] == 'two'
+        assert config['here'] == os.path.dirname(config1_fname)
+
+
+class TestProcessConfig:
+    @pytest.fixture
+    def process_config(self):
+        from palladium.config import process_config
+        return process_config
+
+    @pytest.fixture
+    def config1(self):
         dummy = 'palladium.tests.test_config.MyDummyComponent'
-        config = {
+        return {
             'mycomponent': {
                 '__factory__': dummy,
                 'arg1': 3,
@@ -76,9 +129,48 @@ class TestInitializeConfigImpl:
                 },
             }]],
             'myconstant': 42,
+
+            'mycopiedconstant': {
+                '__copy__': 'mycomponent.arg1',
+                },
+
+            'mydict': {
+                'arg1': 1,
+                'mycopiedcomponent': {
+                    '__copy__': 'mycomponent',
+                    'arg2': None,
+                    },
+                },
+
+            '__python__': """
+C['mynestedlistofcomponents'][0][0]['arg2']['__factory__'] = 'builtins:dict'
+C['myotherconstant'] = 13
+""",
             }
 
-        config = _initialize_config(config)
+    @pytest.fixture
+    def config2(self):
+        return {
+            'mydict': {
+                '__copy__': 'mydict',
+                'arg1': 3,
+                'arg2': None,
+                },
+            'mynewdict': {
+                '__copy__': 'mydict',
+                'arg2': 2,
+                },
+            'mysupernewdict': {
+                '__copy__': 'mynewdict',
+                },
+            'mycopiedconstant': {
+                '__copy__': 'mycopiedconstant',
+                },
+            }
+
+    def test_config1(self, process_config, config1):
+        config = process_config(config1)
+
         assert config['myconstant'] == 42
 
         mycomponent = config['mycomponent']
@@ -107,117 +199,40 @@ class TestInitializeConfigImpl:
         mnl = config['mynestedlistofcomponents']
         assert isinstance(mnl[0][0], MyDummyComponent)
         assert mnl[0][0].arg1 == 'feep'
-        assert isinstance(mnl[0][0].arg2, MyDummyComponent)
 
-    def test_initialize_config_logging(self, _initialize_config):
+        assert config['mycopiedconstant'] == 3
+
+        mcc = config['mydict']['mycopiedcomponent']
+        assert mcc.arg2 is None
+        assert mcc.arg1 == mycomponent.arg1
+        assert mcc.subcomponent == mycomponent.subcomponent
+        assert mcc.subcomponent is not mycomponent.subcomponent
+
+        assert isinstance(mnl[0][0].arg2, dict)
+        assert config['myotherconstant'] == 13
+
+    def test_config1_and_2(self, process_config, config1, config2):
+        config = process_config(config1, config2)
+
+        assert config['mydict']['arg1'] == 3
+
+        mycomponent = config['mycomponent']
+        mcc = config['mydict']['mycopiedcomponent']
+        assert mcc.arg2 is None
+        assert mcc.arg1 == mycomponent.arg1
+        assert mcc.subcomponent == mycomponent.subcomponent
+        assert mcc.subcomponent is not mycomponent.subcomponent
+
+        assert config['mynewdict']['arg1'] == config['mydict']['arg1']
+        assert config['mynewdict']['arg2'] == 2
+        assert isinstance(
+            config['mynewdict']['mycopiedcomponent'], MyDummyComponent)
+        assert isinstance(
+            config['mysupernewdict']['mycopiedcomponent'], MyDummyComponent)
+
+        assert config['mycopiedconstant'] == 3
+
+    def test_initialize_config_logging(self, process_config):
         with patch('palladium.config.dictConfig') as dictConfig:
-            _initialize_config({'logging': 'yes, please'})
+            process_config({'logging': 'yes, please'})
             dictConfig.assert_called_with('yes, please')
-
-
-class TestInitializeConfig:
-    @pytest.fixture
-    def initialize_config(self):
-        from palladium.config import initialize_config
-        return initialize_config
-
-    def test_initialize_config_extra(self, config,
-                                     initialize_config):
-        config.clear()
-        initialize_config(two='three')
-        assert config['two'] == 'three'
-
-    def test_initialize_config_already_initialized(self, config,
-                                                   initialize_config):
-        config.clear()
-        config.initialized = True
-        with pytest.raises(RuntimeError):
-            initialize_config(two='three')
-
-
-class TestGetConfig:
-    @pytest.fixture
-    def get_config(self):
-        from palladium.config import get_config
-        return get_config
-
-    def test_read(self, get_config, config):
-        config.initialized = False
-        config_in = {
-            'mycomponent': {
-                '__factory__': 'palladium.tests.test_config.MyDummyComponent',
-                'arg1': 3,
-                },
-            'myconstant': 42,
-            }
-
-        with patch('palladium.config.open',
-                   mock_open(read_data=str(config_in)),
-                   create=True):
-            with patch('palladium.config.os.environ', {'PALLADIUM_CONFIG': 'somepath'}):
-                config_new = get_config()
-
-            assert config_new['myconstant'] == config_in['myconstant']
-            mycomponent = config_new['mycomponent']
-            assert isinstance(mycomponent, MyDummyComponent)
-            assert mycomponent.arg1 == 3
-
-    def test_read_multiple_files(self, get_config, config):
-        config.initialized = False
-
-        fake_open = MagicMock()
-        fake_open.return_value.__enter__.return_value.read.side_effect = [
-            "{'a': 42, 'b': 6}", "{'b': 7}"
-            ]
-        with patch('palladium.config.open', fake_open, create=True):
-            with patch('palladium.config.os.environ', {
-                'PALLADIUM_CONFIG': 'somepath, andanother',
-                    }):
-                config_new = get_config()
-
-        assert config_new == {'a': 42, 'b': 7}
-
-        # Files later in the list override files earlier in the list:
-        assert fake_open.call_args_list == [
-            call('somepath'), call('andanother')]
-
-    def test_read_environ(self, get_config, config):
-        config.initialized = False
-        config_in_str = """
-{
-'mycomponent': {
-    '__factory__': 'palladium.tests.test_config.MyDummyComponent',
-    'arg1': 3,
-    'arg2': "{}:{}".format(environ['PALLADIUM_DB_IP'],
-                           environ['PALLADIUM_DB_PORT']),
-    },
-}"""
-
-        with patch('palladium.config.open',
-                   mock_open(read_data=config_in_str),
-                   create=True):
-            with patch('palladium.config.os.environ', {
-                    'PALLADIUM_CONFIG': 'somepath',
-                    'PALLADIUM_DB_IP': '192.168.0.1',
-                    'PALLADIUM_DB_PORT': '666',
-            }):
-                config_new = get_config()
-
-            mycomponent = config_new['mycomponent']
-            assert isinstance(mycomponent, MyDummyComponent)
-            assert mycomponent.arg1 == 3
-            assert mycomponent.arg2 == '192.168.0.1:666'
-
-    def test_read_here(self, get_config, config):
-        config.initialized = False
-        config_in_str = "{'here': here}"
-
-        with patch('palladium.config.open',
-                   mock_open(read_data=config_in_str),
-                   create=True):
-            with patch('palladium.config.os.environ', {
-                    'PALLADIUM_CONFIG': '/home/megha/somepath.py',
-            }):
-                config_new = get_config()
-
-            assert config_new['here'] == '/home/megha'
