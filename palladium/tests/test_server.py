@@ -255,11 +255,11 @@ class TestPredictService:
     def _initialize_config(self, flask_app_test):
         # simulate real config (empty dict), otherwise
         # _initialize_config will not be called
-        with patch('palladium.util.open',
+        with patch('palladium.config.open',
                    mock_open(read_data=str({})),
                    create=True):
             with patch(
-                    'palladium.util.os.environ',
+                    'palladium.config.os.environ',
                     {'PALLADIUM_CONFIG': 'somepath'}
             ):
                 with flask_app_test.test_request_context():

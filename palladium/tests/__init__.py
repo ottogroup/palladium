@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def config(request):
-    from palladium.util import _config
+    from palladium.config import _config
 
     orig = _config.copy()
     _config.clear()
