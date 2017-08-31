@@ -252,22 +252,10 @@ class TestPredictService:
             'palladium.server.predict', mock_predict)
         yield mock_predict
 
-    def _initialize_config(self, flask_app_test):
-        # simulate real config (empty dict), otherwise
-        # _initialize_config will not be called
-        with patch('palladium.util.open',
-                   mock_open(read_data=str({})),
-                   create=True):
-            with patch(
-                    'palladium.util.os.environ',
-                    {'PALLADIUM_CONFIG': 'somepath'}
-            ):
-                with flask_app_test.test_request_context():
-                    from palladium.util import initialize_config
-                    initialize_config()
-
     def test_entry_point_not_set(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -277,8 +265,8 @@ class TestPredictService:
         }
         # set default predict_decorators
         config['predict_decorators'] = ['palladium.tests.test_server.dec']
-
-        self._initialize_config(flask_app_test)
+        with flask_app_test.test_request_context():
+            process_config(config)
 
         resp1 = flask_client.get(
             'predict?param=bla')
@@ -288,6 +276,8 @@ class TestPredictService:
 
     def test_entry_point_multiple(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -308,7 +298,8 @@ class TestPredictService:
         # only second predict service uses decorator list
         config['predict_decorators2'] = ['palladium.tests.test_server.dec']
 
-        self._initialize_config(flask_app_test)
+        with flask_app_test.test_request_context():
+            process_config(config)
 
         resp1 = flask_client.get(
             'predict1?param=bla')
@@ -324,6 +315,8 @@ class TestPredictService:
 
     def test_entry_point_multiple_conflict(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -341,7 +334,8 @@ class TestPredictService:
         }
 
         with pytest.raises(AssertionError):
-            self._initialize_config(flask_app_test)
+            with flask_app_test.test_request_context():
+                process_config(config)
 
 
 class TestPredict:

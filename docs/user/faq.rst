@@ -164,46 +164,6 @@ passed at runtime.
         'n_jobs': -1,
         }
 
-Is there any way to use a base configuration for different settings?
-====================================================================
-
-Since Palladium 1.0.1 you can use a list of configuration files in the
-``PALLADIUM_CONFIG`` environment variable. During initialization, the
-list will be processed successively and the configuration dict will be
-updated using the configuration files from left to right.
-
-If we use a list of two configurations like
-``PALLADIUM_CONFIG=mypath/mybaseconfig.py,mypath/myconfig.py``, the
-entries in the configuration files later in the list will override the
-ones defined before. E.g., if the contents of
-``mypath/mybaseconfig.py`` is ``{'a': 42, 'b': 6}``" and the contents
-of ``mypath/myconfig.py`` is ``{'b': 7, 'c': 99}``, then the resulting
-configuration will be ``{'a': 42, 'b': 7, 'c': 99}``.
-
-
-Can I somehow track the location of the configuration file?
-===========================================================
-
-You can use the `here` variable in a configuration file in order to
-refer to the location, e.g.:
-
-.. code-block:: python
-
-    {
-	...
-	'config_path': here,
-	...
-    }
-
-After initialization, this variable will point to the folder where the
-configuration file is located. In the example, eeading the value of
-`config_path` will give you a string of the path to the folder:
-
-.. code-block:: python
-
-    from palladium.util import get_config
-    get_config()['config_path']  % -> config folder path
-
 
 How can I use test Palladium components in a shell?
 ===================================================

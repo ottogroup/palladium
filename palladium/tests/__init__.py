@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from contextlib import contextmanager
 import os
+from random import shuffle
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -8,7 +10,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def config(request):
-    from palladium.util import _config
+    from palladium.config import _config
 
     orig = _config.copy()
     _config.clear()
