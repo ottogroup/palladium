@@ -1,3 +1,4 @@
+import codecs
 import gzip
 import json
 import os
@@ -7,6 +8,7 @@ from unittest.mock import Mock
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+import requests_mock
 import pytest
 
 
@@ -69,7 +71,8 @@ class TestFile:
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File.list_properties') as lp,\
             patch('palladium.persistence.os.path.exists') as exists,\
-            patch('palladium.persistence.gzip.open') as open,\
+            patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
             lp.return_value = {'active-model': '99'}
@@ -78,12 +81,13 @@ class TestFile:
             result = File('/models/model-{version}').read()
             open.assert_called_with('/models/model-99.pkl.gz', 'rb')
             assert result == load.return_value
-            load.assert_called_with(open.return_value.__enter__.return_value)
+            load.assert_called_with(gzopen.return_value.__enter__.return_value)
 
     def test_read_with_version(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.os.path.exists') as exists,\
-            patch('palladium.persistence.gzip.open') as open,\
+            patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
             exists.return_value = True
@@ -91,7 +95,7 @@ class TestFile:
             result = File('/models/model-{version}').read(432)
             open.assert_called_with('/models/model-432.pkl.gz', 'rb')
             assert result == load.return_value
-            load.assert_called_with(open.return_value.__enter__.return_value)
+            load.assert_called_with(gzopen.return_value.__enter__.return_value)
 
     def test_read_no_model(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
@@ -124,16 +128,17 @@ class TestFile:
     def test_write_no_model_files(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File._update_md') as update_md,\
-            patch('palladium.persistence.gzip.open') as open,\
+            patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.dump') as dump:
             lm.return_value = []
-            open.return_value = MagicMock()
+            gzopen.return_value = MagicMock()
             model = MagicMock()
             result = File('/models/model-{version}').write(model)
             open.assert_called_with('/models/model-1.pkl.gz', 'wb')
             dump.assert_called_with(
                 model,
-                open.return_value.__enter__.return_value,
+                gzopen.return_value.__enter__.return_value,
                 )
             update_md.assert_called_with({'models': [model.__metadata__]})
             assert result == 1
@@ -141,16 +146,17 @@ class TestFile:
     def test_write_with_model_files(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File._update_md') as update_md,\
-            patch('palladium.persistence.gzip.open') as open,\
+            patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.dump') as dump:
             lm.return_value = [{'version': 99}]
-            open.return_value = MagicMock()
+            gzopen.return_value = MagicMock()
             model = MagicMock()
             result = File('/models/model-{version}').write(model)
             open.assert_called_with('/models/model-100.pkl.gz', 'wb')
             dump.assert_called_with(
                 model,
-                open.return_value.__enter__.return_value,
+                gzopen.return_value.__enter__.return_value,
                 )
             update_md.assert_called_with(
                 {'models': [{'version': 99}, model.__metadata__]})
@@ -163,6 +169,7 @@ class TestFile:
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File._update_md') as update_md,\
             patch('palladium.persistence.gzip.open'),\
+            patch('palladium.persistence.open'),\
             patch('palladium.persistence.pickle.dump'):
             lm.return_value = [{'version': 99}]
             File('/models/model-{version}').write(model)
@@ -587,6 +594,147 @@ class TestDatabase:
         request.addfinalizer(lambda: os.remove(path))
         db = Database('sqlite:///{}'.format(path), poolclass=QueuePool)
         assert isinstance(db.engine.pool, QueuePool)
+
+
+@pytest.fixture
+def mocked_requests():
+    with requests_mock.Mocker() as m:
+        yield m
+
+
+class TestRest:
+    base_url = "https://some.restyfactory.wtf/repo"
+
+    @pytest.fixture
+    def persister(self):
+        from palladium.persistence import Rest
+        return Rest(
+            "%s/mymodel-{version}" % (self.base_url,),
+            auth=("the_user", "the_pass"),
+            )
+
+    def assert_auth_headers(self, mocked_requests):
+        encoded = codecs.encode(b'the_user:the_pass', 'base64').strip()
+        auth_header = 'Basic %s' % (encoded.decode('ascii'),)
+        for req in mocked_requests.request_history:
+            assert req.headers['Authorization'] == auth_header
+
+    def test_upload(self, mocked_requests, persister):
+        """ test upload of model and metadata """
+        model = Dummy(name='mymodel')
+
+        get_md_url = "%s/mymodel-metadata.json" % (self.base_url,)
+        mocked_requests.head(get_md_url, status_code=404)
+
+        put_model_body = None
+        def handle_put_model(request, context):
+            nonlocal put_model_body
+            put_model_body = request.body.read()
+            return ''
+
+        put_model_url = "%s/mymodel-1.pkl.gz" % (self.base_url,)
+        put_model = mocked_requests.put(
+            put_model_url,
+            text=handle_put_model,
+            status_code=201,
+            )
+
+        put_md_body = None
+        def handle_put_md(request, context):
+            nonlocal put_md_body
+            put_md_body = request.body.read()
+            return ''
+
+        put_md_url = "%s/mymodel-metadata.json" % (self.base_url,)
+        put_md = mocked_requests.put(
+            put_md_url,
+            text=handle_put_md,
+            status_code=201,
+            )
+
+        persister.write(model)
+        assert put_model.called
+        assert put_md.called
+
+        assert pickle.loads(gzip.decompress(put_model_body)) == model
+        assert len(json.loads(put_md_body)['models']) == 1
+        self.assert_auth_headers(mocked_requests)
+
+    def test_download(self, mocked_requests, persister):
+        """ test download and activation of a model """
+        expected = Dummy(name='mymodel')
+        zipped_model = gzip.compress(pickle.dumps(expected))
+
+        get_md_url = "%s/mymodel-metadata.json" % (self.base_url,)
+        mocked_requests.head(get_md_url, status_code=200)
+        get_md = mocked_requests.get(
+            get_md_url,
+            json={"models": [{"version": 1}],
+                  "properties": {'active-model': 1}},
+            status_code=200,
+            )
+
+        get_model_url = "%s/mymodel-1.pkl.gz" % (self.base_url,)
+        mocked_requests.head(get_model_url, status_code=200)
+        get_model = mocked_requests.get(
+            get_model_url,
+            content=zipped_model,
+            status_code=200,
+            )
+
+        model = persister.read()
+        assert get_md.called
+        assert get_model.called
+        assert model == expected
+        self.assert_auth_headers(mocked_requests)
+
+    def test_delete(self, mocked_requests, persister):
+        """ test deleting a model and metadata update """
+
+        get_md_url = "%s/mymodel-metadata.json" % (self.base_url,)
+        mocked_requests.head(get_md_url, status_code=200)
+        mocked_requests.get(
+            get_md_url,
+            json={"models": [{"version": 1}],
+                  "properties": {'active-model': 1}},
+            status_code=200,
+            )
+
+        put_md_body = None
+        def handle_put_md(request, context):
+            nonlocal put_md_body
+            put_md_body = request.body.read()
+            return ''
+
+        put_md_url = "%s/mymodel-metadata.json" % (self.base_url,)
+        put_md = mocked_requests.put(
+            put_md_url,
+            text=handle_put_md,
+            status_code=201,
+            )
+
+        delete_model_url = "%s/mymodel-1.pkl.gz" % (self.base_url,)
+        delete_model = mocked_requests.delete(
+            delete_model_url,
+            status_code=200,
+            )
+
+        persister.delete(1)
+        assert put_md.called
+        assert delete_model.called
+        assert len(json.loads(put_md_body)['models']) == 0
+        self.assert_auth_headers(mocked_requests)
+
+
+class TestRestIO:
+    @pytest.fixture
+    def io(self):
+        from palladium.persistence import RestIO
+        return RestIO(('auth', 'aut'))
+
+    def test_unsupported_filemode(self, io):
+        with pytest.raises(NotImplementedError):
+            io.open('haha', mode='a')
 
 
 class TestDatabaseCLOB(TestDatabase):
