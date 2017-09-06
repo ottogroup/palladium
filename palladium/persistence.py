@@ -9,6 +9,7 @@ import io
 import json
 import os
 import pickle
+import codecs
 from pkg_resources import parse_version
 from tempfile import TemporaryFile
 from threading import Lock
@@ -129,7 +130,11 @@ class RestIO(FileLikeIO):
         if mode[0] == 'r':
             res = self.session.get(path, stream=True)
             res.raise_for_status()
-            return res.raw
+            if res.encoding is not None:
+                reader = codecs.getreader(res.encoding)
+                return reader(res.raw)
+            else:
+                return res.raw
         elif mode[0] == 'w':
             return self._write(path, mode=mode)
         raise NotImplementedError("filemode: %s" % (mode,))
