@@ -1,4 +1,4 @@
-.. configuration:
+.. _configuration:
 
 ======================
 Advanced configuration
@@ -12,7 +12,7 @@ With Palladium, it is easy to separate code from configuration, and
 run code with different configurations.
 
 Configuration files use Python syntax.  For an introduction, please
-visit the tutorial_.
+visit the :ref:`tutorial`.
 
 Palladium uses an environment variable called ``PALLADIUM_CONFIG`` to
 look up the location of the configuration file.
