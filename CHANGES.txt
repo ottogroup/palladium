@@ -3,13 +3,6 @@ v1.2 - unreleased
 
 - Add a model persister for REST backends, e.g. for use with Artifactory.
 
-  Usage example:
-
-    'model_persister': {
-        '__factory__': 'palladium.persistence.Rest',
-        'url': 'http://localhost:8081/artifactory/modelz/{version}',
-        'auth': ('username, 'passw0rd'),
-    }
 
 v1.1.0 - 2017-03-27
 ===================
