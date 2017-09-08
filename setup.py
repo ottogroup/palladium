@@ -10,6 +10,7 @@ install_requires = [
     'numpy',
     'pandas',
     'psutil',
+    'requests',
     'scikit-learn',
     'sqlalchemy',
     'ujson',
@@ -18,6 +19,7 @@ install_requires = [
 tests_require = [
     'pytest',
     'pytest-cov',
+    'requests-mock',
     ]
 
 docs_require = [

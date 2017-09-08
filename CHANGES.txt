@@ -1,3 +1,9 @@
+v1.2 - unreleased
+=================
+
+- Add a model persister for REST backends, e.g. for use with Artifactory.
+
+
 v1.1.0 - 2017-03-27
 ===================
 

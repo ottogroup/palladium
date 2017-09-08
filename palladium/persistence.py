@@ -1,15 +1,20 @@
 """:class:`~palladium.interfaces.ModelPersister` implementations.
 """
 
+from abc import abstractmethod
 import base64
+from contextlib import contextmanager
 import gzip
 import io
 import json
 import os
 import pickle
+import codecs
 from pkg_resources import parse_version
+from tempfile import TemporaryFile
 from threading import Lock
 
+import requests
 from sqlalchemy import create_engine
 from sqlalchemy import CLOB
 from sqlalchemy import Column
@@ -54,17 +59,115 @@ class UpgradeSteps:
         return results
 
 
-class File(ModelPersister):
-    """A :class:`~palladium.interfaces.ModelPersister` that pickles models
-    onto the file system, into a given directory.
+class FileLikeIO:
+    """Used by :class:`FileLike` to access low level file handle
+    operations.
+    """
+
+    @abstractmethod
+    def open(self, path, mode='r'):
+        """Return a file handle
+
+        For normal files, the implementation is:
+
+        ```python
+        return open(path, mode)
+        ```
+        """
+
+    @abstractmethod
+    def exists(self, path):
+        """Test whether a path exists
+
+        For normal files, the implementation is:
+
+        ```python
+        return os.path.exists(path)
+        ```
+        """
+
+    @abstractmethod
+    def remove(self, path):
+        """Remove a file
+
+        For normal files, the implementation is:
+
+        ```python
+        os.remove(path)
+        ```
+        """
+
+
+class FileIO(FileLikeIO):
+    def open(self, path, mode='r'):
+        return open(path, mode)
+
+    def exists(self, path):
+        return os.path.exists(path)
+
+    def remove(self, path):
+        os.remove(path)
+
+
+class RestIO(FileLikeIO):
+    def __init__(self, auth):
+        self.session = requests.Session()
+        self.session.auth = auth
+
+    @contextmanager
+    def _write(self, url, mode):
+        # Use a context manager to send the actual request out once
+        # the file that FileLike writes into is 'closed'.
+        if '+' not in mode:
+            mode += '+'
+        with TemporaryFile(mode=mode) as fh:
+            yield fh
+            fh.seek(0)
+            res = self.session.put(url, data=fh)
+        res.raise_for_status()
+
+    def open(self, path, mode='r'):
+        if mode[0] == 'r':
+            res = self.session.get(path, stream=True)
+            res.raise_for_status()
+            if res.encoding is not None:
+                reader = codecs.getreader(res.encoding)
+                return reader(res.raw)
+            else:
+                return res.raw
+        elif mode[0] == 'w':
+            return self._write(path, mode=mode)
+        raise NotImplementedError("filemode: %s" % (mode,))
+
+    def exists(self, path):
+        res = self.session.head(path)
+        if res.status_code == 404:
+            return False
+        res.raise_for_status()
+        return True
+
+    def remove(self, path):
+        res = self.session.delete(path)
+        res.raise_for_status()
+
+
+class FileLike(ModelPersister):
+    """A :class:`~palladium.interfaces.ModelPersister` that pickles
+    models through file-like handles.
+
+    An argument ``io`` is used to access low level file handle
+    operations.
     """
     upgrade_steps = UpgradeSteps()
 
-    def __init__(self, path):
+    def __init__(self, path, io):
         """
         :param str path:
           The *path* template that I will use to store models,
           e.g. ``/path/to/model-{version}``.
+
+        :param FileLikeIO io:
+          Used to access low level file handle operations.
         """
         if '{version}' not in path:
             raise ValueError(
@@ -72,6 +175,7 @@ class File(ModelPersister):
                 "e.g., model-{version}.pickle."
                 )
         self.path = path
+        self.io = io
 
     def read(self, version=None):
         use_active_model = version is None
@@ -83,15 +187,16 @@ class File(ModelPersister):
             version = props['active-model']
 
         fname = self.path.format(version=version) + '.pkl.gz'
-        if not os.path.exists(fname):
+        if not self.io.exists(fname):
             if use_active_model:
                 raise LookupError(
                     "Activated model not available. Maybe it was deleted.")
             else:
                 raise LookupError("No such version: {}".format(version))
 
-        with gzip.open(fname, 'rb') as f:
-            return pickle.load(f)
+        with self.io.open(fname, 'rb') as fh:
+            with gzip.open(fh, 'rb') as f:
+                return pickle.load(f)
 
     def write(self, model):
         last_version = 0
@@ -103,8 +208,9 @@ class File(ModelPersister):
         li.append(annotate(model, {'version': version}))
 
         fname = self.path.format(version=version) + '.pkl.gz'
-        with gzip.open(fname, 'wb') as f:
-            pickle.dump(model, f)
+        with self.io.open(fname, 'wb') as fh:
+            with gzip.open(fh, 'wb') as f:
+                pickle.dump(model, f)
 
         self._update_md({'models': li})
         return version
@@ -131,22 +237,22 @@ class File(ModelPersister):
             raise LookupError("No such version: {}".format(version))
         self._update_md({
             'models': [m for m in md['models'] if m['version'] != version]})
-        os.remove(self.path.format(version=version) + '.pkl.gz')
+        self.io.remove(self.path.format(version=version) + '.pkl.gz')
 
     @property
     def _md_filename(self):
         return self.path.format(version='metadata') + '.json'
 
     def _read_md(self):
-        if os.path.exists(self._md_filename):
-            with open(self._md_filename, 'r') as f:
+        if self.io.exists(self._md_filename):
+            with self.io.open(self._md_filename, 'r') as f:
                 return json.load(f)
         return {'models': [], 'properties': {'db-version': __version__}}
 
     def _update_md(self, data):
         data2 = self._read_md()
         data2.update(data)
-        with open(self._md_filename, 'w') as f:
+        with self.io.open(self._md_filename, 'w') as f:
             json.dump(data2, f, indent=4)
 
     def upgrade(self, from_version=None, to_version=__version__):
@@ -163,8 +269,8 @@ class File(ModelPersister):
 
     @upgrade_steps.add('1.0')
     def _upgrade_1_0(self):
-        if os.path.exists(self._md_filename):
-            with open(self._md_filename, 'r') as f:
+        if self.io.exists(self._md_filename):
+            with self.io.open(self._md_filename, 'r') as f:
                 old_md = json.load(f)
         else:
             old_md = None
@@ -177,8 +283,26 @@ class File(ModelPersister):
         if active_model is not None:
             new_md['properties']['active-model'] = str(active_model)
 
-        with open(self._md_filename, 'w') as f:
+        with self.io.open(self._md_filename, 'w') as f:
             json.dump(new_md, f, indent=4)
+
+
+class File(FileLike):
+    """A :class:`~palladium.interfaces.ModelPersister` that pickles models
+    onto the file system, into a given directory.
+    """
+    def __init__(self, path):
+        """
+        :param str path:
+          The *path* template that I will use to store models,
+          e.g. ``/path/to/model-{version}``.
+        """
+        super().__init__(path, FileIO())
+
+
+class Rest(FileLike):
+    def __init__(self, url, auth):
+        super().__init__(url, RestIO(auth))
 
 
 class Database(ModelPersister):

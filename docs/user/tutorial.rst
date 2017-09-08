@@ -377,6 +377,19 @@ model's version:
             },
         },
 
+If you prefer to use a REST backend like Artifactory for persisting your
+models, you can use the RestPersister:
+
+.. code-block:: python
+
+    'model_persister': {
+        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        'impl': {
+            '__factory__': 'palladium.persistence.Rest',
+            'url': 'http://localhost:8081/artifactory/modelz/{version}',
+            'auth': ('username', 'passw0rd'),
+            },
+        },
 
 
 Predict service
