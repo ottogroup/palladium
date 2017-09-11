@@ -1,6 +1,8 @@
+{% set data = load_setup_py_data() %}
+
 package:
   name: palladium
-  # version is drawn automatically from __conda_version__.txt
+  version: {{ data.get('version') }}
 
 source:
   path: ..
@@ -36,6 +38,10 @@ requirements:
     - scikit-learn
     - sqlalchemy
     - ujson
+    - requests
+    - requests-mock
+    - pytest
+    - pytest-cov
 
   run:
     - python
@@ -49,6 +55,7 @@ requirements:
     - scikit-learn
     - sqlalchemy
     - ujson
+    - requests
 
 test:
   # Python imports
@@ -59,7 +66,7 @@ test:
   commands:
     # You can put test commands to be run here.  Use this to test that the
     # entry points work.
-
+    - py.test --pyargs palladium
     - pld-admin --help
     - pld-devserver --help
     - pld-fit --help
@@ -69,13 +76,16 @@ test:
     - pld-test --help
     - pld-upgrade --help
     - pld-version --help
+      
+# You can also put a file called run_test.py in the recipe that will be run
+# at test time.
 
-  # You can also put a file called run_test.py in the recipe that will be run
-  # at test time.
-
-  # requires:
+  requires:
     # Put any additional test requirements here.  For example
     # - nose
+    - pytest
+    - pytest-cov
+    - requests-mock
 
 about:
   home: https://github.com/ottogroup/palladium
