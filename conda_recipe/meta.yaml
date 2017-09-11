@@ -1,0 +1,88 @@
+package:
+  name: palladium
+  # version is drawn automatically from __conda_version__.txt
+
+source:
+  path: ..
+
+build:
+  # noarch_python: True
+  preserve_egg_dir: True
+  entry_points:
+    - pld-admin = palladium.fit:admin_cmd
+    - pld-devserver = palladium.server:devserver_cmd
+    - pld-fit = palladium.fit:fit_cmd
+    - pld-grid-search = palladium.fit:grid_search_cmd
+    - pld-list = palladium.eval:list_cmd
+    - pld-stream = palladium.server:stream_cmd
+    - pld-test = palladium.eval:test_cmd
+    - pld-upgrade = palladium.util:upgrade_cmd
+    - pld-version = palladium.util:version_cmd
+
+  # If this is a new build for the same version, increment the build
+  # number. If you do not include this key, it defaults to 0.
+  # number: 1
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - docopt
+    - flask
+    - joblib
+    - numpy
+    - pandas
+    - psutil
+    - scikit-learn
+    - sqlalchemy
+    - ujson
+
+  run:
+    - python
+    - setuptools
+    - docopt
+    - flask
+    - joblib
+    - numpy
+    - pandas
+    - psutil
+    - scikit-learn
+    - sqlalchemy
+    - ujson
+
+test:
+  # Python imports
+  imports:
+    - palladium
+    # - palladium.tests
+
+  commands:
+    # You can put test commands to be run here.  Use this to test that the
+    # entry points work.
+
+    - pld-admin --help
+    - pld-devserver --help
+    - pld-fit --help
+    - pld-grid-search --help
+    - pld-list --help
+    - pld-stream --help
+    - pld-test --help
+    - pld-upgrade --help
+    - pld-version --help
+
+  # You can also put a file called run_test.py in the recipe that will be run
+  # at test time.
+
+  # requires:
+    # Put any additional test requirements here.  For example
+    # - nose
+
+about:
+  home: https://github.com/ottogroup/palladium
+  license: Apache Software License
+  summary: 'Framework for setting up predictive analytics services'
+  license_family: APACHE
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
