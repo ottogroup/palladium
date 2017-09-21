@@ -1,4 +1,8 @@
+from functools import reduce
+import operator
 import os
+import threading
+import time
 from unittest.mock import patch
 
 import pytest
@@ -21,6 +25,11 @@ class MyDummyComponent:
             self.subcomponent == other.subcomponent,
             self.initialize_component_arg == other.initialize_component_arg,
             ])
+
+
+class BlockingDummy:
+    def __init__(self):
+        time.sleep(0.1)
 
 
 def test_config_class_keyerror():
@@ -57,7 +66,13 @@ class TestGetConfig:
     @pytest.fixture
     def config1_fname(self, tmpdir):
         path = tmpdir.join('config1.py')
-        path.write("{'env': environ['ENV1'], 'here': here}")
+        path.write("""{
+            'env': environ['ENV1'],
+            'here': here,
+            'blocking': {
+                '__factory__': 'palladium.tests.test_config.BlockingDummy',
+            }
+        }""")
         return str(path)
 
     @pytest.fixture
@@ -85,6 +100,23 @@ class TestGetConfig:
         config = get_config()
         assert config['env'] == 'two'
         assert config['here'] == os.path.dirname(config1_fname)
+
+    def test_multithreaded(self, get_config, config1_fname, monkeypatch):
+        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config1_fname)
+        monkeypatch.setitem(os.environ, 'ENV1', 'one')
+
+        cfg = {}
+
+        def get_me_config():
+            cfg[threading.get_ident()] = get_config().copy()
+
+        threads = [threading.Thread(target=get_me_config) for i in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert reduce(operator.eq, cfg.values())
 
 
 class TestProcessConfig:

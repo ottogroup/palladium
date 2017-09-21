@@ -3,6 +3,7 @@ import logging
 from logging.config import dictConfig
 import os
 import sys
+import threading
 
 
 PALLADIUM_CONFIG_ERROR = """
@@ -194,7 +195,15 @@ def process_config(
     return config_final
 
 
+_get_config_lock = threading.Lock()
+
+
 def get_config(**extra):
+    with _get_config_lock:
+        return _get_config(**extra)
+
+
+def _get_config(**extra):
     if not _config.initialized:
         _config.update(extra)
         _config.initialized = True
