@@ -32,6 +32,12 @@ class BlockingDummy:
         time.sleep(0.1)
 
 
+class BadDummy:
+    def __init__(self):
+        from palladium.config import get_config
+        self.cfg = get_config().copy()
+
+
 def test_config_class_keyerror():
     from palladium.config import Config
     with pytest.raises(KeyError) as e:
@@ -81,6 +87,16 @@ class TestGetConfig:
         path.write("{'env': environ['ENV2']}")
         return str(path)
 
+    @pytest.fixture
+    def config3_fname(self, tmpdir):
+        path = tmpdir.join('config3.py')
+        path.write("""{
+            'bad': {
+                '__factory__': 'palladium.tests.test_config.BadDummy'
+             }
+        }""")
+        return str(path)
+
     def test_extras(self, get_config):
         assert get_config(foo='bar')['foo'] == 'bar'
 
@@ -117,6 +133,17 @@ class TestGetConfig:
             thread.join()
 
         assert reduce(operator.eq, cfg.values())
+
+    def test_recursive_call_of_get_config(
+        self,
+        get_config,
+        config3_fname,
+        monkeypatch,
+    ):
+        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config3_fname)
+        with pytest.raises(ValueError) as exc:
+            get_config()
+        assert "You're trying to call `get_config` from code" in str(exc.value)
 
 
 class TestProcessConfig:
