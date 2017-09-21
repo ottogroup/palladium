@@ -90,7 +90,7 @@ class PredictService:
 
     def initialize_component(self, config):
         create_predict_function(
-            self.entry_point, self, self.decorator_list_name)
+            self.entry_point, self, self.decorator_list_name, config)
 
     def __call__(self, model, request):
         try:
@@ -244,7 +244,7 @@ def alive(alive=None):
 
 
 def create_predict_function(
-        route, predict_service, decorator_list_name):
+        route, predict_service, decorator_list_name, config):
     """Creates a predict function and registers it to
     the Flask app using the route decorator.
 
@@ -262,7 +262,7 @@ def create_predict_function(
       A predict service function that will be used to process
       predict requests.
     """
-    model_persister = get_config().get('model_persister')
+    model_persister = config.get('model_persister')
 
     @app.route(route, methods=['GET', 'POST'], endpoint=route)
     @PluggableDecorator(decorator_list_name)
