@@ -130,11 +130,11 @@ class RestIO(FileLikeIO):
         if mode[0] == 'r':
             res = self.session.get(path, stream=True)
             res.raise_for_status()
-            if res.encoding is not None:
-                reader = codecs.getreader(res.encoding)
-                return reader(res.raw)
-            else:
+            if 'b' in mode:
                 return res.raw
+            else:
+                reader = codecs.getreader(res.encoding or 'utf-8')
+                return reader(res.raw)
         elif mode[0] == 'w':
             return self._write(path, mode=mode)
         raise NotImplementedError("filemode: %s" % (mode,))
