@@ -44,6 +44,10 @@ class ComponentHandler:
         factory_dotted_name = specification.pop(self.key)
         factory = resolve_dotted_name(factory_dotted_name)
         component = factory(**specification)
+        try:
+            component.__pld_config_key__ = self.key
+        except AttributeError:
+            pass
         self.components.append(component)
         return component
 

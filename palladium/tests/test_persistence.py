@@ -760,7 +760,8 @@ class TestCachedUpdatePersister:
         assert persister.read() is persister.impl.read.return_value
 
     def test_read_custom_value(self, process_store, persister):
-        process_store['model'] = 'mymodel'
+        persister.__pld_config_key__ = 'myname'
+        process_store['myname'] = 'mymodel'
         assert persister.read() == 'mymodel'
 
     def test_write(self, persister):
@@ -781,9 +782,10 @@ class TestCachedUpdatePersister:
 
         impl = MagicMock()
         persister = CachedUpdatePersister(impl, update_cache_rrule=rrule_info)
+        persister.__pld_config_key__ = 'mypersister'
         persister.initialize_component(config)
         assert persister.read() is impl.read.return_value
-        assert process_store['model'] is impl.read.return_value
+        assert process_store['mypersister'] is impl.read.return_value
         assert impl.read.call_count == 1
 
     def test_dont_cache(self, process_store, CachedUpdatePersister, config):
