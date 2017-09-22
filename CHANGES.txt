@@ -10,7 +10,12 @@ v1.2 - unreleased
   with the key `my_model_persister`.  This is a breaking change, since
   the previously used key `model` is no longer available.
 
-- Add a model persister for REST backends, e.g. for use with Artifactory.
+- Added a model persister for REST backends, e.g. for use with
+  Artifactory.
+
+- Added a `__copy__` directive to copy and override existing entries
+  in configuration files. This can be used to avoid redundancy in one
+  or multiple configuration files.
 
 
 v1.1.0 - 2017-03-27
