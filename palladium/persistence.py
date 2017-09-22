@@ -133,7 +133,7 @@ class RestIO(FileLikeIO):
             if 'b' in mode:
                 return res.raw
             else:
-                reader = codecs.getreader(res.encoding)
+                reader = codecs.getreader(res.encoding or 'utf-8')
                 return reader(res.raw)
         elif mode[0] == 'w':
             return self._write(path, mode=mode)
