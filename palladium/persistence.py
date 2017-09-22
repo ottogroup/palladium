@@ -569,10 +569,12 @@ class CachedUpdatePersister(ModelPersister):
 
     cache = process_store
     __pld_config_key__ = 'cachedupdatepersister_default'
+    _loaded_version = None
 
     def __init__(self,
                  impl,
-                 update_cache_rrule=None
+                 update_cache_rrule=None,
+                 check_version=True,
                  ):
         """
         :param ModelPersister impl:
@@ -583,9 +585,15 @@ class CachedUpdatePersister(ModelPersister):
           :class:`dateutil.rrule.rrule` that determines when the cache
           will be updated.  See :class:`~palladium.util.RruleThread` for
           details.
+
+        :param bool check_version:
+          If set to `True`, I will perform a check and only load a new
+          model from the storage if my cached version differs from
+          what's the current active version.
         """
         self.impl = impl
         self.update_cache_rrule = update_cache_rrule
+        self.check_version = check_version
 
     def initialize_component(self, config):
         self.use_cache = config.get('__mode__') != 'fit'
@@ -611,9 +619,20 @@ class CachedUpdatePersister(ModelPersister):
 
     @PluggableDecorator('update_model_decorators')
     def update_cache(self, *args, **kwargs):
+        active_version = None
+
+        if self.check_version:
+            active_version = self.list_properties()['active-model']
+            if self._loaded_version == (active_version, args, kwargs):
+                return
+
         model = self.impl.read(*args, **kwargs)
         if model is not None:
             self.cache[self.__pld_config_key__] = model
+
+            if self.check_version:
+                self._loaded_version = (active_version, args, kwargs)
+
             return model
 
     @PluggableDecorator('write_model_decorators')

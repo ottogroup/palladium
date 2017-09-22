@@ -1,6 +1,8 @@
 v1.2 - unreleased
 =================
 
+- In CachedUpdatePersister don't load model if we already have active
+
 - Allow for use of multiple CachedUpdatePersisters
 
   Instances of CachedUpdatePersister now use their own name inside the
