@@ -351,7 +351,7 @@ class TestPredict:
         with flask_app_test.test_request_context():
             from palladium.server import create_predict_function
             create_predict_function(
-                '/predict', predict_service, 'predict_decorators')
+                '/predict', predict_service, 'predict_decorators', config)
             predict_service.return_value = make_ujson_response(
                 'a', status_code=200)
 
