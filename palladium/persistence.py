@@ -568,7 +568,7 @@ class CachedUpdatePersister(ModelPersister):
     """
 
     cache = process_store
-    key = 'model'
+    __pld_config_key__ = 'cachedupdatepersister_default'
 
     def __init__(self,
                  impl,
@@ -605,7 +605,7 @@ class CachedUpdatePersister(ModelPersister):
 
     def read(self, *args, **kwargs):
         if self.use_cache:
-            return self.cache[self.key]
+            return self.cache[self.__pld_config_key__]
         else:
             return self.impl.read(*args, **kwargs)
 
@@ -613,7 +613,7 @@ class CachedUpdatePersister(ModelPersister):
     def update_cache(self, *args, **kwargs):
         model = self.impl.read(*args, **kwargs)
         if model is not None:
-            self.cache[self.key] = model
+            self.cache[self.__pld_config_key__] = model
             return model
 
     @PluggableDecorator('write_model_decorators')

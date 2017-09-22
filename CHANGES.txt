@@ -1,6 +1,15 @@
 v1.2 - unreleased
 =================
 
+- Allow for use of multiple CachedUpdatePersisters
+
+  Instances of CachedUpdatePersister now use their own name inside the
+  configuration file to index into `process_store`.  That is, a
+  CachedUpdatePersister that's configured as `my_model_persister`
+  inside the configuration file will have an entry in `process_store`
+  with the key `my_model_persister`.  This is a breaking change, since
+  the previously used key `model` is no longer available.
+
 - Add a model persister for REST backends, e.g. for use with Artifactory.
 
 
