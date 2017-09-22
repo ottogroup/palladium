@@ -769,9 +769,23 @@ class TestCachedUpdatePersister:
         persister.impl.write.assert_called_with('mymodel')
 
     def test_update_cache(self, persister):
+        persister.update_cache()
+        assert persister.read() is persister.impl.read.return_value
+        persister.impl.read.assert_called_with()
+        assert len(persister.impl.read.mock_calls) == 1
+
+    def test_update_cache_no_check_version(self, persister):
+        persister.check_version = False
+        persister.update_cache()
+        assert persister.read() is persister.impl.read.return_value
+        persister.impl.read.assert_called_with()
+        assert len(persister.impl.read.mock_calls) == 2
+
+    def test_update_cache_specific_version(self, persister):
         persister.update_cache(version=123)
         assert persister.read() is persister.impl.read.return_value
         persister.impl.read.assert_called_with(version=123)
+        assert len(persister.impl.read.mock_calls) == 2
 
     def test_update_cache_rrule(self, process_store, CachedUpdatePersister,
                                 config):
