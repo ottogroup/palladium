@@ -13,30 +13,6 @@ PALLADIUM_CONFIG_ERROR = """
 """
 
 
-PALLADIUM_RECURSIVE_GET_CONFIG_ERROR = """
-  You're trying to call `get_config` from code that's already called by
-  `get_config`.  Thus, there's unfortunately no way we can guarantee
-  that the part of the config that you're interested in is already
-  properly resolved and initialized.
-
-  Please consider either implementing the `initialize_component(config)`
-  method in your class, which gets passed the initialized configuration
-  as an argument, and use that to do final initialization of your model
-  using the configuration.  Or pass in the configuration that you want
-  to access as part of your components config.  So if possible, instead
-  of:
-
-    {'mycomponent': {...}, 'mydependency': {...}}
-
-  write this:
-
-    {'mycomponent': {'mydependency': {...}, ...}}
-
-  Use of @args_from_config for functions that get called by
-  configuration code is prohibited for the same reason.
-"""
-
-
 class Config(dict):
     """A dictionary that represents the app's configuration.
 
@@ -223,20 +199,12 @@ def process_config(
     return config_final
 
 
-_get_config_lock = threading.Lock()
-_get_config_lock_owner = None
+_get_config_lock = threading.RLock()
 
 
 def get_config(**extra):
-    global _get_config_lock_owner
-    if _get_config_lock_owner == threading.get_ident():
-        raise ValueError(PALLADIUM_RECURSIVE_GET_CONFIG_ERROR)
     with _get_config_lock:
-        _get_config_lock_owner = threading.get_ident()
-        try:
-            config = _get_config(**extra)
-        finally:
-            _get_config_lock_owner = None
+        config = _get_config(**extra)
     return config
 
 
