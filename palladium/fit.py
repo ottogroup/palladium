@@ -150,6 +150,9 @@ def grid_search(dataset_loader_train, model, grid_search):
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
+    model_params = grid_search.pop('override_model_params', {})
+    model.set_params(**model_params)
+
     grid_search_kwargs = {
         'refit': False,
         }
