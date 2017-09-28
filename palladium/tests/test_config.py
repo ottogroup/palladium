@@ -134,17 +134,6 @@ class TestGetConfig:
 
         assert reduce(operator.eq, cfg.values())
 
-    def test_recursive_call_of_get_config(
-        self,
-        get_config,
-        config3_fname,
-        monkeypatch,
-    ):
-        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config3_fname)
-        with pytest.raises(ValueError) as exc:
-            get_config()
-        assert "You're trying to call `get_config` from code" in str(exc.value)
-
 
 class TestProcessConfig:
     @pytest.fixture
