@@ -9,6 +9,7 @@ import hashlib
 from functools import wraps
 import os
 import pickle
+from tempfile import gettempdir
 
 from joblib import numpy_pickle
 
@@ -78,7 +79,7 @@ class diskcache(abstractcache):
             self.filename_tmpl = filename_tmpl
 
     #: Where to persist cached values
-    filename_tmpl = '/tmp/cache-{module}.{func}-{key}.pickle'
+    filename_tmpl = gettempdir() + '/pld/cache-{module}.{func}-{key}.pickle'
 
     #: Using numpy_pickle.load
     load = staticmethod(numpy_pickle.load)
@@ -107,6 +108,7 @@ class diskcache(abstractcache):
 
     def __setitem__(self, key, value):
         filename = self._filename(key)
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         return self.dump(value, filename)
 
 
