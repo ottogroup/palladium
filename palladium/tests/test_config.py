@@ -134,6 +134,12 @@ class TestGetConfig:
 
         assert reduce(operator.eq, cfg.values())
 
+    def test_pld_config_key(self, get_config, config1_fname, monkeypatch):
+        monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config1_fname)
+        monkeypatch.setitem(os.environ, 'ENV1', 'one')
+        config = get_config()
+        assert config['blocking'].__pld_config_key__ == 'blocking'
+
 
 class TestProcessConfig:
     @pytest.fixture

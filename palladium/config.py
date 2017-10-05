@@ -39,14 +39,14 @@ class ComponentHandler:
         self.config = config
         self.components = []
 
-    def __call__(self, props):
+    def __call__(self, name, props):
         from .util import resolve_dotted_name
         specification = props.copy()
         factory_dotted_name = specification.pop(self.key)
         factory = resolve_dotted_name(factory_dotted_name)
         component = factory(**specification)
         try:
-            component.__pld_config_key__ = self.key
+            component.__pld_config_key__ = name
         except AttributeError:
             pass
         self.components.append(component)
@@ -78,7 +78,7 @@ class CopyHandler:
         else:
             raise KeyError(dotted_path)
 
-    def __call__(self, props):
+    def __call__(self, name, props):
         dotted_path = props[self.key]
         try:
             value = self._resolve(self.configs[-1:], dotted_path)
@@ -106,7 +106,7 @@ class PythonHandler:
     def __init__(self, config):
         self.config = config
 
-    def __call__(self, props):
+    def __call__(self, name, props):
         statements = props.pop(self.key)
         exec(
             statements,
@@ -147,7 +147,7 @@ def _run_config_handlers_recursive(props, handlers):
                 _run_config_handlers_recursive(value, handlers)
                 for name, handler in handlers.items():
                     if name in value:
-                        value = props[key] = handler(value)
+                        value = props[key] = handler(key, value)
             elif isinstance(value, (list, tuple)):
                 _run_config_handlers_recursive(value, handlers)
     elif isinstance(props, (list, tuple)):
@@ -156,7 +156,7 @@ def _run_config_handlers_recursive(props, handlers):
                 _run_config_handlers_recursive(item, handlers)
                 for name, handler in handlers.items():
                     if name in item:
-                        item = props[i] = handler(item)
+                        item = props[i] = handler(str(i), item)
             elif isinstance(item, (list, tuple)):
                 _run_config_handlers_recursive(item, handlers)
 
