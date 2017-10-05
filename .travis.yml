@@ -5,24 +5,17 @@ python:
 env:
   - TRAVIS=yes
 before_install:
-  # update R version
-  - codename=$(lsb_release -c -s)
-  - echo "deb https://cran.rstudio.com/bin/linux/ubuntu $codename/" | sudo tee -a /etc/apt/sources.list > /dev/null
-  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-  - sudo add-apt-repository -y ppa:marutter/rdev
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran r-base
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda
-  - travis_retry conda install --yes python=$TRAVIS_PYTHON_VERSION --file requirements.txt
-  - sudo rm /home/travis/miniconda3/lib/libgfortran* # get rid of conflicting lib (rpy2/R)
+  - conda install --yes gcc
+  - conda install --yes -c r rpy2
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION --file requirements.txt
   - pip install pytest pytest-cov
   - pip install coveralls
 install:
-  - travis_retry pip install rpy2==2.7.8
   - travis_retry python setup.py dev
 script: travis_wait py.test --runslow
 after_success:
