@@ -1,6 +1,9 @@
 v1.2 - unreleased
 =================
 
+- A `scoring` variable in the configuration root, if defined, will be
+  used for both pld-test and pld-grid-search
+
 - In CachedUpdatePersister don't load model if we already have active
 
 - Allow for use of multiple CachedUpdatePersisters

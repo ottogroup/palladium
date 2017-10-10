@@ -1,6 +1,7 @@
 """Utilities for fitting modles.
 """
 
+from warnings import warn
 import sys
 
 from datetime import datetime
@@ -146,7 +147,7 @@ Options:
 
 
 @args_from_config
-def grid_search(dataset_loader_train, model, grid_search):
+def grid_search(dataset_loader_train, model, grid_search, scoring=None):
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
@@ -159,10 +160,21 @@ def grid_search(dataset_loader_train, model, grid_search):
     if callable(cv):
         grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
 
-    if not (hasattr(model, 'score') or 'scoring' in grid_search_kwargs):
+    if 'scoring' in grid_search_kwargs:
+        warn("Use of 'scoring' inside of 'grid_search' is deprecated. "
+             "To fix, move 'scoring' up to the top level of the configuration "
+             "dict.", DeprecationWarning)
+        if scoring is not None:
+            raise ValueError("You cannot define 'scoring' in 'grid_search' "
+                             "and globally.")
+        scoring = grid_search_kwargs['scoring']
+    elif scoring is not None:
+        grid_search_kwargs['scoring'] = scoring
+
+    if not (hasattr(model, 'score') or scoring is not None):
         raise ValueError(
             "Your model doesn't seem to implement a 'score' method.  You may "
-            "want to pass a 'scoring' argument to 'grid_search' instead."
+            "want to define a 'scoring' option in the configuration."
             )
 
     with timer(logger.info, "Running grid search"):
