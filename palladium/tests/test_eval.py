@@ -34,6 +34,21 @@ class TestTest:
         with pytest.raises(ValueError):
             test(dataset_loader_test, model_persister)
 
+    def test_test_two_scores(self, test):
+        dataset_loader_test, model_persister, scorer = Mock(), Mock(), Mock()
+        X, y = object(), object()
+        dataset_loader_test.return_value = X, y
+        model = model_persister.read.return_value
+        model.__metadata__ = {'version': 77}
+
+        test(dataset_loader_test, model_persister,
+             scoring=scorer, model_version=77)
+
+        dataset_loader_test.assert_called_with()
+        model_persister.read.assert_called_with(version=77)
+        scorer.assert_called_with(model, X, y)
+        assert model.score.call_count == 0
+
 
 class TestList:
     @pytest.fixture

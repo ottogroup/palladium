@@ -251,6 +251,40 @@ class TestGridSearch:
         with pytest.raises(ValueError):
             grid_search(dataset_loader_train, model, {})
 
+    def test_two_scores_raises(self, grid_search):
+        model, dataset_loader_train = Mock(spec=['fit', 'predict']), Mock()
+        dataset_loader_train.return_value = object(), object()
+
+        with pytest.raises(ValueError):
+            grid_search(dataset_loader_train, model,
+                        {'scoring': 'f1'}, scoring='accuracy')
+
+    def test_two_scores_priority(self, grid_search):
+        # 'scoring' has higher priority than 'model.score'
+        model = Mock(spec=['fit', 'predict', 'score'])
+        dataset_loader_train = Mock()
+        scoring = Mock()
+        dataset_loader_train.return_value = object(), object()
+
+        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
+            grid_search(dataset_loader_train, model, {}, scoring=scoring)
+        GridSearchCV.assert_called_with(
+            model, refit=False, scoring=scoring)
+
+    def test_deprecated_scoring(self, grid_search):
+        # 'scoring' inside of 'grid_search' is deprecated
+        model = Mock(spec=['fit', 'predict', 'score'])
+        dataset_loader_train = Mock()
+        scoring = Mock()
+        dataset_loader_train.return_value = object(), object()
+
+        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
+            with pytest.warns(DeprecationWarning):
+                grid_search(dataset_loader_train, model,
+                            {'scoring': scoring}, scoring=None)
+        GridSearchCV.assert_called_with(
+            model, refit=False, scoring=scoring)
+
     def test_grid_search(self, grid_search):
         model, dataset_loader_train = Mock(), Mock()
         dataset_loader_train.return_value = (
