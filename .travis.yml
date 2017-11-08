@@ -9,9 +9,7 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
-  - conda update --yes conda
-  - conda install --yes gcc
-  - conda install --yes -c r rpy2
+  - conda install --yes -c r rpy2 r-randomforest
   - conda install --yes python=$TRAVIS_PYTHON_VERSION --file requirements.txt
   - pip install pytest pytest-cov
   - pip install coveralls
@@ -21,3 +19,5 @@ script: travis_wait py.test --runslow
 after_success:
   - coveralls
 cache: apt
+
+
