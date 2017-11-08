@@ -98,6 +98,35 @@ class TestFit:
         assert result.__metadata__['score_train'] == 0.9
         assert result.__metadata__['score_test'] == 0.8
 
+    def test_evaluate_scoring(self, fit, dataset_loader):
+        model = Mock()
+        scorer = Mock()
+        scorer.side_effect = [0.99, 0.01]
+
+        fit(
+            dataset_loader_train=dataset_loader,
+            model=model,
+            model_persister=Mock(),
+            dataset_loader_test=dataset_loader,
+            scoring=scorer,
+            evaluate=True,
+            )
+        assert model.score.call_count == 0
+        assert scorer.call_count == 2
+
+    def test_evaluate_no_score(self, fit, dataset_loader):
+        model = Mock()
+        del model.score
+
+        with pytest.raises(ValueError):
+            fit(
+                dataset_loader_train=dataset_loader,
+                model=model,
+                model_persister=Mock(),
+                dataset_loader_test=dataset_loader,
+                evaluate=True,
+                )
+
     def test_persist_if_better_than(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
         model.score.return_value = 0.9
