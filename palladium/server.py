@@ -232,7 +232,7 @@ def alive(alive=None):
         obj = process_store.get(attr)
         if obj is not None:
             obj_info = {}
-            obj_info['updated'] = process_store.mtime['model'].isoformat()
+            obj_info['updated'] = process_store.mtime[attr].isoformat()
             if hasattr(obj, '__metadata__'):
                 obj_info['metadata'] = obj.__metadata__
             info[attr] = obj_info
