@@ -3,8 +3,8 @@ import io
 import json
 import math
 from threading import Thread
+from unittest.mock import call
 from unittest.mock import Mock
-from unittest.mock import mock_open
 from unittest.mock import patch
 
 import dateutil.parser
@@ -393,6 +393,7 @@ class TestAliveFunctional:
         assert sorted(resp_data.keys()) == ['memory_usage',
                                             'memory_usage_vms',
                                             'palladium_version',
+                                            'process_metadata',
                                             'service_metadata']
         assert resp_data['service_metadata'] == config['service_metadata']
 
@@ -559,3 +560,40 @@ class TestPredictStream:
         assert (model.predict.call_args[0][0] == np.array([[1.0, 1.0]])).all()
         assert model.predict.call_args[1]['turbo'] is True
         assert model.predict.call_args[1]['magic'] is False
+
+
+class TestRefitFunctional:
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_it(self, config, jobs, flask_client):
+        dsl, model, model_persister = Mock(), Mock(), Mock()
+        X, y = Mock(), Mock()
+        dsl.return_value = X, y
+        config['dataset_loader_train'] = dsl
+        config['model'] = model
+        config['model_persister'] = model_persister
+        resp = flask_client.post('refit')
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == str(model)
+
+    @pytest.mark.parametrize('args, args_expected', [
+        (
+            {'persist': '1', 'activate': '0', 'evaluate': 't'},
+            {'persist': True, 'activate': False, 'evaluate': True},
+        ),
+        (
+            {'persist_if_better_than': '0.234'},
+            {'persist_if_better_than': 0.234},
+        ),
+    ])
+    def test_pass_args(self, flask_client, args, args_expected):
+        with patch('palladium.server.fit') as fit:
+            fit.__name__ = 'mock'
+            flask_client.post('refit', data=args)
+        assert fit.call_args == call(**args_expected)

@@ -2,6 +2,7 @@
 """
 
 import sys
+
 from docopt import docopt
 from flask import Flask
 from flask import make_response
@@ -11,6 +12,7 @@ import ujson
 from werkzeug.exceptions import BadRequest
 
 from . import __version__
+from .fit import fit
 from .interfaces import PredictError
 from .util import args_from_config
 from .util import get_config
@@ -20,6 +22,7 @@ from .util import logger
 from .util import memory_usage_psutil
 from .util import PluggableDecorator
 from .util import process_store
+from .util import run_job
 
 app = Flask(__name__)
 
@@ -240,6 +243,8 @@ def alive(alive=None):
             info[attr] = "N/A"
             status_code = 503
 
+    info['process_metadata'] = process_store['process_metadata']
+
     return make_ujson_response(info, status_code=status_code)
 
 
@@ -365,3 +370,22 @@ Options:
     initialize_config()
     stream = PredictStream()
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
+
+
+@app.route('/refit', methods=['POST'])
+@PluggableDecorator('retrain_decorators')
+@args_from_config
+def refit():
+    param_converters = {
+        'persist': lambda x: x.lower() in ('1', 't', 'true'),
+        'activate': lambda x: x.lower() in ('1', 't', 'true'),
+        'evaluate': lambda x: x.lower() in ('1', 't', 'true'),
+        'persist_if_better_than': float,
+        }
+    params = {
+        name: typ(request.form[name])
+        for name, typ in param_converters.items()
+        if name in request.form
+        }
+    thread, job_id = run_job(fit, **params)
+    return make_ujson_response({'job_id': job_id}, status_code=200)

@@ -810,11 +810,12 @@ class TestCachedUpdatePersister:
             'dtstart': '2014-10-30T13:21:18',
             }
 
+        len_before = len(process_store)
         impl = MagicMock()
         persister = CachedUpdatePersister(impl, update_cache_rrule=rrule_info)
         persister.initialize_component(config)
         assert persister.read() is impl.read.return_value
-        assert len(process_store) == 0
+        assert len(process_store) == len_before
         assert persister.thread is None
 
     def test_proxy_list_models(self, CachedUpdatePersister):
