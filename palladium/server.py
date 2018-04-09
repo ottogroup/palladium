@@ -373,7 +373,7 @@ Options:
 
 
 @app.route('/refit', methods=['POST'])
-@PluggableDecorator('retrain_decorators')
+@PluggableDecorator('refit_decorators')
 @args_from_config
 def refit():
     param_converters = {
@@ -389,3 +389,15 @@ def refit():
         }
     thread, job_id = run_job(fit, **params)
     return make_ujson_response({'job_id': job_id}, status_code=200)
+
+
+@app.route('/update-model-cache', methods=['POST'])
+@PluggableDecorator('update_model_cache_decorators')
+@args_from_config
+def update_model_cache(model_persister):
+    method = getattr(model_persister, 'update_cache', None)
+    if method is not None:
+        thread, job_id = run_job(model_persister.update_cache)
+        return make_ujson_response({'job_id': job_id}, status_code=200)
+    else:
+        return make_ujson_response({}, status_code=503)

@@ -299,7 +299,7 @@ def Partial(func, **kwargs):
 def _run_job(func, job_id, params):
     jobs = process_store['process_metadata'].setdefault('jobs', {})
     job = jobs[job_id] = {
-        'func': func.__name__,
+        'func': repr(func),
         'started': str(datetime.utcnow()),
         'status': 'running',
         'thread': threading.get_ident(),

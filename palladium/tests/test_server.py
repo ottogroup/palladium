@@ -597,3 +597,27 @@ class TestRefitFunctional:
             fit.__name__ = 'mock'
             flask_client.post('refit', data=args)
         assert fit.call_args == call(**args_expected)
+
+
+class TestUpdateModelCacheFunctional:
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_success(self, config, jobs, flask_client):
+        model_persister = Mock()
+        config['model_persister'] = model_persister
+        resp = flask_client.post('update-model-cache')
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == repr(model_persister.update_cache())
+
+    def test_unavailable(self, config, jobs, flask_client):
+        model_persister = Mock()
+        del model_persister.update_cache
+        config['model_persister'] = model_persister
+        resp = flask_client.post('update-model-cache')
+        assert resp.status_code == 503
