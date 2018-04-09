@@ -94,11 +94,11 @@ class TestProcessStore:
     def test_mtime_setitem(self, store):
         dt0 = datetime.now()
         store['somekey'] = '1'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt1 = datetime.now()
         assert dt0 < store.mtime['somekey'] < dt1
         store['somekey'] = '2'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt2 = datetime.now()
         assert dt1 < store.mtime['somekey'] < dt2
 
@@ -362,7 +362,7 @@ class TestRunJob:
         results = []
         for i in range(3):
             results.append(run_job(myfunc, add=i))
-        sleep(0.01)
+        sleep(0.005)
         assert result == 3
         assert len(jobs) == len(results) == 3
         assert set(jobs.keys()) == set(r[1] for r in results)
@@ -378,7 +378,7 @@ class TestRunJob:
         num_threads_before = len(threading.enumerate())
         for i in range(3):
             run_job(myfunc, divisor=i)
-        sleep(0.01)
+        sleep(0.005)
         num_threads_after = len(threading.enumerate())
 
         assert num_threads_before == num_threads_after

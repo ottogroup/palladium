@@ -23,6 +23,7 @@ from .util import memory_usage_psutil
 from .util import PluggableDecorator
 from .util import process_store
 from .util import run_job
+from .util import resolve_dotted_name
 
 app = Flask(__name__)
 
@@ -372,7 +373,6 @@ Options:
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
 
 
-@app.route('/refit', methods=['POST'])
 @PluggableDecorator('refit_decorators')
 @args_from_config
 def refit():
@@ -401,3 +401,9 @@ def update_model_cache(model_persister):
         return make_ujson_response({'job_id': job_id}, status_code=200)
     else:
         return make_ujson_response({}, status_code=503)
+
+
+def add_url_rule(rule, endpoint=None, view_func=None, app=app, **options):
+    if isinstance(view_func, str):
+        view_func = resolve_dotted_name(view_func)
+    app.add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)

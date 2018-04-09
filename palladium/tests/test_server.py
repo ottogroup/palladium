@@ -3,6 +3,7 @@ import io
 import json
 import math
 from threading import Thread
+from time import sleep
 from unittest.mock import call
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -564,19 +565,26 @@ class TestPredictStream:
 
 class TestRefitFunctional:
     @pytest.fixture
+    def refit(self):
+        from palladium.server import refit
+        return refit
+
+    @pytest.fixture
     def jobs(self, process_store):
         jobs = process_store['process_metadata'].setdefault('jobs', {})
         yield jobs
         jobs.clear()
 
-    def test_it(self, config, jobs, flask_client):
+    def test_it(self, refit, config, jobs, flask_app):
         dsl, model, model_persister = Mock(), Mock(), Mock()
         X, y = Mock(), Mock()
         dsl.return_value = X, y
         config['dataset_loader_train'] = dsl
         config['model'] = model
         config['model_persister'] = model_persister
-        resp = flask_client.post('refit')
+        with flask_app.test_request_context(method='POST'):
+            resp = refit()
+        sleep(0.005)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'
@@ -592,32 +600,61 @@ class TestRefitFunctional:
             {'persist_if_better_than': 0.234},
         ),
     ])
-    def test_pass_args(self, flask_client, args, args_expected):
+    def test_pass_args(self, refit, flask_app, args, args_expected):
         with patch('palladium.server.fit') as fit:
             fit.__name__ = 'mock'
-            flask_client.post('refit', data=args)
+            with flask_app.test_request_context(method='POST', data=args):
+                refit()
+            sleep(0.005)
         assert fit.call_args == call(**args_expected)
 
 
 class TestUpdateModelCacheFunctional:
+    @pytest.fixture
+    def update_model_cache(self):
+        from palladium.server import update_model_cache
+        return update_model_cache
+
     @pytest.fixture
     def jobs(self, process_store):
         jobs = process_store['process_metadata'].setdefault('jobs', {})
         yield jobs
         jobs.clear()
 
-    def test_success(self, config, jobs, flask_client):
+    def test_success(self, update_model_cache, config, jobs, flask_app):
         model_persister = Mock()
         config['model_persister'] = model_persister
-        resp = flask_client.post('update-model-cache')
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
+        sleep(0.005)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'
         assert job['info'] == repr(model_persister.update_cache())
 
-    def test_unavailable(self, config, jobs, flask_client):
+    def test_unavailable(self, update_model_cache, config, jobs, flask_app):
         model_persister = Mock()
         del model_persister.update_cache
         config['model_persister'] = model_persister
-        resp = flask_client.post('update-model-cache')
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
         assert resp.status_code == 503
+
+
+def _test_add_url_rule_func():
+    return b'A OK'
+
+
+class TestAddUrlRule:
+    @pytest.fixture
+    def add_url_rule(self):
+        from palladium.server import add_url_rule
+        return add_url_rule
+
+    def test_it(self, add_url_rule, flask_client):
+        add_url_rule(
+            '/okay',
+            view_func='palladium.tests.test_server._test_add_url_rule_func',
+            )
+        resp = flask_client.get('/okay')
+        assert resp.data == b'A OK'

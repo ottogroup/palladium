@@ -193,7 +193,7 @@ method:
 
 - In multi-server or multi-process environments, you must take care of
   updating existing model caches (e.g. when running
-  :class:`palladium.persistence.CachedUpdatePersister`) by hand.  This
+  :class:`~palladium.persistence.CachedUpdatePersister`) by hand.  This
   can be done by calling the */update-model-cache* endpoint for each
   server process.
 
@@ -242,4 +242,28 @@ the same way that */refit* does, that is, by returning an id and
 storing information about the job inside of ``process_metadata``.
 */update-model-cache* will update the cache of any caching model
 persisters, such as
-:class:`palladium.persistence.CachedUpdatePersister`.
+:class:`~palladium.persistence.CachedUpdatePersister`.
+
+The */refit* and */update-model-cache* endpoints aren't registered by
+default with the Flask app.  To register the two endpoints, you can
+either call the Flask app's ``add_url_rules`` directly or use the
+convenience function :func:`palladium.server.add_url_rule` instead
+inside of your configuration file.  An example of registering the two
+endpoints is this:
+
+.. code-block:: python
+
+    'flask_add_url_rules': [
+        {
+            '__factory__': 'palladium.server.add_url_rule',
+            'rule': '/refit',
+            'view_func': 'palladium.server.refit',
+            'methods': ['POST'],
+        },
+        {
+            '__factory__': 'palladium.server.add_url_rule',
+            'rule': '/update-model-cache',
+            'view_func': 'palladium.server.update_model_cache',
+            'methods': ['POST'],
+        },
+    ],
