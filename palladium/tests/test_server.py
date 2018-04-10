@@ -563,6 +563,25 @@ class TestPredictStream:
         assert model.predict.call_args[1]['magic'] is False
 
 
+class TestList:
+    @pytest.fixture
+    def list(self):
+        from palladium.server import list
+        return list
+
+    def test_it(self, config, process_store, flask_client):
+        mp = config['model_persister'] = Mock()
+        mp.list_models.return_value = ['one', 'two']
+        mp.list_properties.return_value = {'hey': 'there'}
+        resp = flask_client.get('list')
+        assert resp.status_code == 200
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp_data == {
+            'models': ['one', 'two'],
+            'properties': {'hey': 'there'},
+            }
+
+
 class TestFitFunctional:
     @pytest.fixture
     def fit(self):
