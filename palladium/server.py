@@ -2,6 +2,7 @@
 """
 
 import sys
+
 from docopt import docopt
 from flask import Flask
 from flask import make_response
@@ -11,6 +12,7 @@ import ujson
 from werkzeug.exceptions import BadRequest
 
 from . import __version__
+from .fit import fit as fit_base
 from .interfaces import PredictError
 from .util import args_from_config
 from .util import get_config
@@ -20,6 +22,8 @@ from .util import logger
 from .util import memory_usage_psutil
 from .util import PluggableDecorator
 from .util import process_store
+from .util import run_job
+from .util import resolve_dotted_name
 
 app = Flask(__name__)
 
@@ -240,6 +244,8 @@ def alive(alive=None):
             info[attr] = "N/A"
             status_code = 503
 
+    info['process_metadata'] = process_store['process_metadata']
+
     return make_ujson_response(info, status_code=status_code)
 
 
@@ -365,3 +371,39 @@ Options:
     initialize_config()
     stream = PredictStream()
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
+
+
+@PluggableDecorator('fit_decorators')
+@args_from_config
+def fit():
+    param_converters = {
+        'persist': lambda x: x.lower() in ('1', 't', 'true'),
+        'activate': lambda x: x.lower() in ('1', 't', 'true'),
+        'evaluate': lambda x: x.lower() in ('1', 't', 'true'),
+        'persist_if_better_than': float,
+        }
+    params = {
+        name: typ(request.form[name])
+        for name, typ in param_converters.items()
+        if name in request.form
+        }
+    thread, job_id = run_job(fit_base, **params)
+    return make_ujson_response({'job_id': job_id}, status_code=200)
+
+
+@app.route('/update-model-cache', methods=['POST'])
+@PluggableDecorator('update_model_cache_decorators')
+@args_from_config
+def update_model_cache(model_persister):
+    method = getattr(model_persister, 'update_cache', None)
+    if method is not None:
+        thread, job_id = run_job(model_persister.update_cache)
+        return make_ujson_response({'job_id': job_id}, status_code=200)
+    else:
+        return make_ujson_response({}, status_code=503)
+
+
+def add_url_rule(rule, endpoint=None, view_func=None, app=app, **options):
+    if isinstance(view_func, str):
+        view_func = resolve_dotted_name(view_func)
+    app.add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)

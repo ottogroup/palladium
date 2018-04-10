@@ -137,16 +137,17 @@ entry. Here is an example for the Iris service:
       "palladium_version": "0.6",
       "service_metadata": {
           "service_name": "iris",
-	  "service_version": "0.1"
+          "service_version": "0.1"
       },
       "memory_usage": 78,
       "model": {
           "updated": "2015-02-18T10:13:50.024478",
-	  "metadata": {
-	      "version": 2,
-	      "train_timestamp": "2015-02-18T09:59:34.480063"
-	  }
-      }
+          "metadata": {
+                "version": 2,
+                "train_timestamp": "2015-02-18T09:59:34.480063"
+          }
+      },
+      "process_metadata": {}
   }
 
 */alive* can optionally check for the presence of data loaded into the
@@ -168,3 +169,101 @@ configuration the following entry:
     'alive': {
         'process_store_required': ['data'],
         },
+
+Fit and Update Model Cache
+--------------------------
+
+Palladium allows for periodic updates of the model by use of the
+:class:`palladium.persistence.CachedUpdatePersister`.  For this to
+work, the web service's model persister checks its model database
+source periodically for new versions of the model.  Meanwhile, another
+process runs ``pld-fit`` and saves a new model into the same model
+database.  When ``pld-fit`` is done, the web services will load the
+new model as part of the next periodic update.
+
+The second option is to call the */fit* web service endpoint, which
+will essentially run the equivalent of ``pld-fit``, but in the web
+service's process.  This has a few drawbacks compared to the first
+method:
+
+- The fitting will run inside the same process as the web service.
+  While the model is fitting, your web service will likely use
+  considerably more memory and processing while the fitting is
+  underway.
+
+- In multi-server or multi-process environments, you must take care of
+  updating existing model caches (e.g. when running
+  :class:`~palladium.persistence.CachedUpdatePersister`) by hand.  This
+  can be done by calling the */update-model-cache* endpoint for each
+  server process.
+
+An example request to trigger a fit looks like this (assuming that
+you're running a server locally on port 5000):
+
+  http://localhost:5000/fit?evaluate=false&persist_if_better_than=0.9
+
+The request will return immediately, after spawning a thread to do the
+actual fitting work.  The JSON response has the job's ID, which we'll
+later require next to check the status of our job:
+
+.. code-block:: json
+
+  {"job_id": "1adf9b2d-0160-45f3-a81b-4d8e4edf2713"}
+
+The */alive* endpoint returns information about all jobs inside of the
+``service_metadata.jobs`` entry.  After submitting above job, we'll
+find that calling */alive* returns something like this:
+
+.. code-block:: json
+
+  {
+      "palladium_version": "0.6",
+      // ...
+      "process_metadata": {
+          "jobs": {
+              "1adf9b2d-0160-45f3-a81b-4d8e4edf2713": {
+                  "func": "<fit function>",
+                  "info": "<MyModel>",
+                  "started": "2018-04-09 09:44:52.660732",
+                  "status": "finished",
+                  "thread": 139693771835136
+              }
+          }
+      }
+  }
+
+The ``finished`` status indicates that the job was successfully
+completed.  ``info`` contains a string representation of the
+function's return value.
+
+When using a cached persister, you may also want to run the
+*/update-model-cache* endpoint, which runs another job asynchronously,
+the same way that */fit* does, that is, by returning an id and
+storing information about the job inside of ``process_metadata``.
+*/update-model-cache* will update the cache of any caching model
+persisters, such as
+:class:`~palladium.persistence.CachedUpdatePersister`.
+
+The */fit* and */update-model-cache* endpoints aren't registered by
+default with the Flask app.  To register the two endpoints, you can
+either call the Flask app's ``add_url_rules`` directly or use the
+convenience function :func:`palladium.server.add_url_rule` instead
+inside of your configuration file.  An example of registering the two
+endpoints is this:
+
+.. code-block:: python
+
+    'flask_add_url_rules': [
+        {
+            '__factory__': 'palladium.server.add_url_rule',
+            'rule': '/fit',
+            'view_func': 'palladium.server.fit',
+            'methods': ['POST'],
+        },
+        {
+            '__factory__': 'palladium.server.add_url_rule',
+            'rule': '/update-model-cache',
+            'view_func': 'palladium.server.update_model_cache',
+            'methods': ['POST'],
+        },
+    ],

@@ -3,8 +3,9 @@ import io
 import json
 import math
 from threading import Thread
+from time import sleep
+from unittest.mock import call
 from unittest.mock import Mock
-from unittest.mock import mock_open
 from unittest.mock import patch
 
 import dateutil.parser
@@ -393,6 +394,7 @@ class TestAliveFunctional:
         assert sorted(resp_data.keys()) == ['memory_usage',
                                             'memory_usage_vms',
                                             'palladium_version',
+                                            'process_metadata',
                                             'service_metadata']
         assert resp_data['service_metadata'] == config['service_metadata']
 
@@ -559,3 +561,100 @@ class TestPredictStream:
         assert (model.predict.call_args[0][0] == np.array([[1.0, 1.0]])).all()
         assert model.predict.call_args[1]['turbo'] is True
         assert model.predict.call_args[1]['magic'] is False
+
+
+class TestFitFunctional:
+    @pytest.fixture
+    def fit(self):
+        from palladium.server import fit
+        return fit
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_it(self, fit, config, jobs, flask_app):
+        dsl, model, model_persister = Mock(), Mock(), Mock()
+        X, y = Mock(), Mock()
+        dsl.return_value = X, y
+        config['dataset_loader_train'] = dsl
+        config['model'] = model
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = fit()
+        sleep(0.005)
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == str(model)
+
+    @pytest.mark.parametrize('args, args_expected', [
+        (
+            {'persist': '1', 'activate': '0', 'evaluate': 't'},
+            {'persist': True, 'activate': False, 'evaluate': True},
+        ),
+        (
+            {'persist_if_better_than': '0.234'},
+            {'persist_if_better_than': 0.234},
+        ),
+    ])
+    def test_pass_args(self, fit, flask_app, args, args_expected):
+        with patch('palladium.server.fit_base') as fit_base:
+            fit_base.__name__ = 'mock'
+            with flask_app.test_request_context(method='POST', data=args):
+                fit()
+            sleep(0.005)
+        assert fit_base.call_args == call(**args_expected)
+
+
+class TestUpdateModelCacheFunctional:
+    @pytest.fixture
+    def update_model_cache(self):
+        from palladium.server import update_model_cache
+        return update_model_cache
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_success(self, update_model_cache, config, jobs, flask_app):
+        model_persister = Mock()
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
+        sleep(0.005)
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == repr(model_persister.update_cache())
+
+    def test_unavailable(self, update_model_cache, config, jobs, flask_app):
+        model_persister = Mock()
+        del model_persister.update_cache
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
+        assert resp.status_code == 503
+
+
+def _test_add_url_rule_func():
+    return b'A OK'
+
+
+class TestAddUrlRule:
+    @pytest.fixture
+    def add_url_rule(self):
+        from palladium.server import add_url_rule
+        return add_url_rule
+
+    def test_it(self, add_url_rule, flask_client):
+        add_url_rule(
+            '/okay',
+            view_func='palladium.tests.test_server._test_add_url_rule_func',
+            )
+        resp = flask_client.get('/okay')
+        assert resp.data == b'A OK'

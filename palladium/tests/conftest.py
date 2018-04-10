@@ -1,3 +1,4 @@
+from copy import deepcopy
 import pytest
 
 
@@ -9,9 +10,7 @@ def flask_client(flask_app):
 @pytest.fixture
 def process_store(request):
     from palladium.util import process_store
-
-    orig = process_store.copy()
+    orig = deepcopy(process_store)
+    yield process_store
     process_store.clear()
-    request.addfinalizer(
-        lambda: (process_store.clear(), process_store.update(orig)))
-    return process_store
+    process_store.update(orig)
