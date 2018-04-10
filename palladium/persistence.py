@@ -635,7 +635,6 @@ class CachedUpdatePersister(ModelPersister):
 
             return model
 
-    @PluggableDecorator('write_model_decorators')
     def write(self, model):
         return self.impl.write(model)
 

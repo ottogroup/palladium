@@ -13,9 +13,11 @@ from inspect import signature
 from inspect import getcallargs
 import os
 import sys
-from threading import Thread
+import threading
 from time import sleep
 from time import time
+import traceback
+import uuid
 
 import dateutil.parser
 import dateutil.rrule
@@ -123,10 +125,10 @@ class ProcessStore(UserDict):
         del self.mtime[key]
 
 
-process_store = ProcessStore()
+process_store = ProcessStore(process_metadata={})
 
 
-class RruleThread(Thread):
+class RruleThread(threading.Thread):
     """Calls a given function in intervals defined by given recurrence
     rules (from `datetuil.rrule`).
     """
@@ -292,3 +294,31 @@ def Partial(func, **kwargs):
     partial_func = partial(func, **kwargs)
     update_wrapper(partial_func, func)
     return partial_func
+
+
+def _run_job(func, job_id, params):
+    jobs = process_store['process_metadata'].setdefault('jobs', {})
+    job = jobs[job_id] = {
+        'func': repr(func),
+        'started': str(datetime.utcnow()),
+        'status': 'running',
+        'thread': threading.get_ident(),
+        }
+    try:
+        retval = func(**params)
+    except:
+        job['status'] = 'error'
+        job['info'] = traceback.format_exc()
+    else:
+        job['status'] = 'finished'
+        job['info'] = str(retval)
+
+
+def run_job(func, **params):
+    job_id = str(uuid.uuid4())
+    thread = threading.Thread(
+        target=_run_job,
+        kwargs={'func': func, 'job_id': job_id, 'params': params},
+        )
+    thread.start()
+    return thread, job_id

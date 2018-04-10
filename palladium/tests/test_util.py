@@ -1,4 +1,5 @@
 from datetime import datetime
+import threading
 from time import sleep
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -93,11 +94,11 @@ class TestProcessStore:
     def test_mtime_setitem(self, store):
         dt0 = datetime.now()
         store['somekey'] = '1'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt1 = datetime.now()
         assert dt0 < store.mtime['somekey'] < dt1
         store['somekey'] = '2'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt2 = datetime.now()
         assert dt1 < store.mtime['somekey'] < dt2
 
@@ -337,3 +338,75 @@ class TestPartial:
         Partial('palladium.tests.test_util:TestPartial.myfunc', two=2)(one='one')
         assert self.calls == [('one', 2, 'three')]
         self.__class__.calls = []
+
+
+class TestRunJob:
+    @pytest.fixture
+    def run_job(self):
+        from palladium.util import run_job
+        return run_job
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata']['jobs'] = {}
+        yield jobs
+        jobs.clear()
+
+    def test_simple(self, run_job, jobs):
+        def myfunc(add):
+            nonlocal result
+            result += add
+            return add
+
+        result = 0
+        results = []
+        for i in range(3):
+            results.append(run_job(myfunc, add=i))
+        sleep(0.005)
+        assert result == 3
+        assert len(jobs) == len(results) == 3
+        assert set(jobs.keys()) == set(r[1] for r in results)
+        assert all(j['status'] == 'finished' for j in jobs.values())
+        assert set(j['info'] for j in jobs.values()) == set(['0', '1', '2'])
+
+    def test_exception(self, run_job, jobs):
+        def myfunc(divisor):
+            nonlocal result
+            result /= divisor
+
+        result = 1
+        num_threads_before = len(threading.enumerate())
+        for i in range(3):
+            run_job(myfunc, divisor=i)
+        sleep(0.005)
+        num_threads_after = len(threading.enumerate())
+
+        assert num_threads_before == num_threads_after
+        assert result == 0.5
+        job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
+        assert job1['status'] == 'error'
+        assert 'division by zero' in job1['info']
+        assert job2['status'] == 'finished'
+        assert job3['status'] == 'finished'
+
+    def test_lifecycle(self, run_job, jobs):
+        def myfunc(tts):
+            sleep(tts)
+
+        num_threads_before = len(threading.enumerate())
+        for i in range(3):
+            run_job(myfunc, tts=i/100)
+
+        job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
+        assert job1['status'] == 'finished'
+        assert job2['status'] == job3['status'] == 'running'
+        assert len(threading.enumerate()) - num_threads_before == 2
+
+        sleep(0.015)
+        assert job2['status'] == 'finished'
+        assert job3['status'] == 'running'
+        assert len(threading.enumerate()) - num_threads_before == 1
+
+        sleep(0.015)
+        assert job3['status'] == 'finished'
+        assert len(threading.enumerate()) - num_threads_before == 0
