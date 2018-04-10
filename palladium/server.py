@@ -12,7 +12,7 @@ import ujson
 from werkzeug.exceptions import BadRequest
 
 from . import __version__
-from .fit import fit
+from .fit import fit as fit_base
 from .interfaces import PredictError
 from .util import args_from_config
 from .util import get_config
@@ -373,9 +373,9 @@ Options:
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
 
 
-@PluggableDecorator('refit_decorators')
+@PluggableDecorator('fit_decorators')
 @args_from_config
-def refit():
+def fit():
     param_converters = {
         'persist': lambda x: x.lower() in ('1', 't', 'true'),
         'activate': lambda x: x.lower() in ('1', 't', 'true'),
@@ -387,7 +387,7 @@ def refit():
         for name, typ in param_converters.items()
         if name in request.form
         }
-    thread, job_id = run_job(fit, **params)
+    thread, job_id = run_job(fit_base, **params)
     return make_ujson_response({'job_id': job_id}, status_code=200)
 
 

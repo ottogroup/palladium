@@ -170,8 +170,8 @@ configuration the following entry:
         'process_store_required': ['data'],
         },
 
-Refit and Update Model Cache
-----------------------------
+Fit and Update Model Cache
+--------------------------
 
 Palladium allows for periodic updates of the model by use of the
 :class:`palladium.persistence.CachedUpdatePersister`.  For this to
@@ -181,7 +181,7 @@ process runs ``pld-fit`` and saves a new model into the same model
 database.  When ``pld-fit`` is done, the web services will load the
 new model as part of the next periodic update.
 
-The second option is to call the */refit* web service endpoint, which
+The second option is to call the */fit* web service endpoint, which
 will essentially run the equivalent of ``pld-fit``, but in the web
 service's process.  This has a few drawbacks compared to the first
 method:
@@ -197,10 +197,10 @@ method:
   can be done by calling the */update-model-cache* endpoint for each
   server process.
 
-An example request to trigger a refit looks like this (assuming that
+An example request to trigger a fit looks like this (assuming that
 you're running a server locally on port 5000):
 
-  http://localhost:5000/refit?evaluate=false&persist_if_better_than=0.9
+  http://localhost:5000/fit?evaluate=false&persist_if_better_than=0.9
 
 The request will return immediately, after spawning a thread to do the
 actual fitting work.  The JSON response has the job's ID, which we'll
@@ -238,13 +238,13 @@ function's return value.
 
 When using a cached persister, you may also want to run the
 */update-model-cache* endpoint, which runs another job asynchronously,
-the same way that */refit* does, that is, by returning an id and
+the same way that */fit* does, that is, by returning an id and
 storing information about the job inside of ``process_metadata``.
 */update-model-cache* will update the cache of any caching model
 persisters, such as
 :class:`~palladium.persistence.CachedUpdatePersister`.
 
-The */refit* and */update-model-cache* endpoints aren't registered by
+The */fit* and */update-model-cache* endpoints aren't registered by
 default with the Flask app.  To register the two endpoints, you can
 either call the Flask app's ``add_url_rules`` directly or use the
 convenience function :func:`palladium.server.add_url_rule` instead
@@ -256,8 +256,8 @@ endpoints is this:
     'flask_add_url_rules': [
         {
             '__factory__': 'palladium.server.add_url_rule',
-            'rule': '/refit',
-            'view_func': 'palladium.server.refit',
+            'rule': '/fit',
+            'view_func': 'palladium.server.fit',
             'methods': ['POST'],
         },
         {

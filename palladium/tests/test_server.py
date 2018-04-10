@@ -563,11 +563,11 @@ class TestPredictStream:
         assert model.predict.call_args[1]['magic'] is False
 
 
-class TestRefitFunctional:
+class TestFitFunctional:
     @pytest.fixture
-    def refit(self):
-        from palladium.server import refit
-        return refit
+    def fit(self):
+        from palladium.server import fit
+        return fit
 
     @pytest.fixture
     def jobs(self, process_store):
@@ -575,7 +575,7 @@ class TestRefitFunctional:
         yield jobs
         jobs.clear()
 
-    def test_it(self, refit, config, jobs, flask_app):
+    def test_it(self, fit, config, jobs, flask_app):
         dsl, model, model_persister = Mock(), Mock(), Mock()
         X, y = Mock(), Mock()
         dsl.return_value = X, y
@@ -583,7 +583,7 @@ class TestRefitFunctional:
         config['model'] = model
         config['model_persister'] = model_persister
         with flask_app.test_request_context(method='POST'):
-            resp = refit()
+            resp = fit()
         sleep(0.005)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
@@ -600,13 +600,13 @@ class TestRefitFunctional:
             {'persist_if_better_than': 0.234},
         ),
     ])
-    def test_pass_args(self, refit, flask_app, args, args_expected):
-        with patch('palladium.server.fit') as fit:
-            fit.__name__ = 'mock'
+    def test_pass_args(self, fit, flask_app, args, args_expected):
+        with patch('palladium.server.fit_base') as fit_base:
+            fit_base.__name__ = 'mock'
             with flask_app.test_request_context(method='POST', data=args):
-                refit()
+                fit()
             sleep(0.005)
-        assert fit.call_args == call(**args_expected)
+        assert fit_base.call_args == call(**args_expected)
 
 
 class TestUpdateModelCacheFunctional:
