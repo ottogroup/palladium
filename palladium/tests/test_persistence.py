@@ -802,6 +802,13 @@ class TestCachedUpdatePersister:
         assert process_store['mypersister'] is impl.read.return_value
         assert impl.read.call_count == 1
 
+    def test_update_cache_lookup_error(self, persister, process_store):
+        persister.impl.read.side_effect = LookupError
+        persister.__pld_config_key__ = 'thypersister'
+        persister.check_version = False
+        assert persister.update_cache() is None
+        assert 'thypersister' not in process_store
+
     def test_dont_cache(self, process_store, CachedUpdatePersister, config):
         config['__mode__'] = 'fit'
 
