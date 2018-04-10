@@ -168,3 +168,19 @@ configuration the following entry:
     'alive': {
         'process_store_required': ['data'],
         },
+
+List
+----
+
+The */list* handler returns model and model persister data.  Here's
+some example output:
+
+.. code-block:: json
+
+   {
+       "models": [
+           {"train_timestamp": "2018-04-09T13:08:11.933814", "version": 1},
+           {"train_timestamp": "2018-04-09T13:11:05.336124", 'version': 2}
+       ],
+       "properties": {"active-model": "8", "db-version": "1.2"}
+   }

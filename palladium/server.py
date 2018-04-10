@@ -365,3 +365,14 @@ Options:
     initialize_config()
     stream = PredictStream()
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
+
+
+@app.route('/list')
+@PluggableDecorator('list_decorators')
+@args_from_config
+def list(model_persister):
+    info = {
+        'models': model_persister.list_models(),
+        'properties': model_persister.list_properties(),
+        }
+    return make_ujson_response(info)
