@@ -9,15 +9,30 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
+  - conda config --set always_yes yes --set changeps1 no
   - conda install --yes -c r rpy2 r-randomforest
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION --file requirements.txt
-  - pip install pytest pytest-cov
+  - conda install python=$TRAVIS_PYTHON_VERSION --file requirements.txt
+  - conda update -q conda
   - pip install coveralls
-install:
   - travis_retry python setup.py dev
-script: travis_wait py.test --runslow
+script:
+  - travis_wait py.test --runslow
+deploy:
+  - provider: script
+    script: conda_recipe/pypi_upload.sh
+    skip_cleanup: true
+    on:
+      repo: ottogroup/palladium
+      tags: true
+  - provider: script
+    script: conda_recipe/conda_upload.sh
+    skip_cleanup: true
+    on:
+      repo: ottogroup/palladium
+      tags: true
 after_success:
   - coveralls
-cache: apt
-
+cache:
+  - apt
+  - pip
 
