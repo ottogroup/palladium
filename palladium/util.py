@@ -274,6 +274,7 @@ class PluggableDecorator:
         return wraps(func)(wrapper)
 
 
+@PluggableDecorator('get_metadata_decorators')
 def get_metadata(error_code=0, error_message=None, status='OK'):
     metadata = {
         'status': status,
