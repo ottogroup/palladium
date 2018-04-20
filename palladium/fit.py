@@ -6,6 +6,7 @@ import sys
 
 from datetime import datetime
 from docopt import docopt
+import pandas
 from pprint import pformat
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import GridSearchCV
@@ -160,7 +161,8 @@ Options:
 
 
 @args_from_config
-def grid_search(dataset_loader_train, model, grid_search, scoring=None):
+def grid_search(dataset_loader_train, model, grid_search, scoring=None,
+                save_results=None):
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
@@ -194,15 +196,15 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None):
         gs = GridSearchCV(model, **grid_search_kwargs)
         gs.fit(X, y)
 
-    scores = []
-    means = gs.cv_results_['mean_test_score']
-    stds = gs.cv_results_['std_test_score']
-    params = gs.cv_results_['params']
-    for mean, std, param in zip(means, stds, params):
-        scores.append("mean: {0:.5f}, std: {1:.5f}, params: {2}".format(mean, std, param))
-    logger.info('\n{}'.format(
-        pformat(sorted(scores, reverse=True)).replace('"', '')))
-    return scores
+    results = pandas.DataFrame(gs.cv_results_)
+    if save_results:
+        results.to_csv(save_results, index=False)
+    pandas.options.display.max_rows = len(results)
+    pandas.options.display.max_columns = len(results.columns)
+    if 'rank_test_score' in results:
+        results = results.sort_values('rank_test_score')
+    print(results)
+    return gs
 
 
 def grid_search_cmd(argv=sys.argv[1:]):  # pragma: no cover
@@ -217,8 +219,9 @@ Usage:
   pld-grid-search [options]
 
 Options:
+  --save-results=<fname>   Save results to CSV file
   -h --help                Show this screen.
 """
-    docopt(grid_search_cmd.__doc__, argv=argv)
+    arguments = docopt(grid_search_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
-    grid_search()
+    grid_search(save_results=arguments['--save-results'])

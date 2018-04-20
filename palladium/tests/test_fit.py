@@ -6,6 +6,7 @@ from unittest.mock import call
 from unittest.mock import patch
 
 from dateutil.parser import parse
+import pandas
 import pytest
 
 
@@ -238,40 +239,46 @@ def test_delete():
 
 class TestGridSearch:
     @pytest.fixture
+    def GridSearchCVWithScores(self, monkeypatch):
+        scores = {
+            'mean_test_score': [0.1, 0.2],
+            'std_test_score': [0.06463643, 0.05073433],
+            'params': [{'C': 0.1}, {'C': 0.3}],
+            'rank_test_score': [1, 2],
+            }
+
+        GridSearchCV = Mock()
+        monkeypatch.setattr('palladium.fit.GridSearchCV', GridSearchCV)
+        GridSearchCV().cv_results_ = scores
+        return GridSearchCV
+
+    @pytest.fixture
     def grid_search(self):
         from palladium.fit import grid_search
         return grid_search
 
-    def test_it(self, grid_search):
+    def test_it(self, grid_search, GridSearchCVWithScores, capsys, tmpdir):
         model, dataset_loader_train = Mock(), Mock()
         grid_search_params = {'verbose': 4}
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
-        scores = {
-            'mean_test_score': [0.1, 0.2],
-            'std_test_score': [0.06463643, 0.05073433],
-            'params': [{'C': 0.1}, {'C': 0.3}]}
 
-        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-            GridSearchCV().cv_results_ = scores
-            result = grid_search(
-                dataset_loader_train, model, grid_search_params)
-
-        expected = []
-        expected.append("mean: {0:.5f}, std: {1:.5f}, params: {2}"
-                        .format(
-                            scores['mean_test_score'][0],
-                            scores['std_test_score'][0],
-                            scores['params'][0]))
-        expected.append("mean: {0:.5f}, std: {1:.5f}, params: {2}"
-                        .format(
-                            scores['mean_test_score'][1],
-                            scores['std_test_score'][1],
-                            scores['params'][1]))
-        assert result == expected
+        results_csv = tmpdir.join('results.csv')
+        result = grid_search(
+            dataset_loader_train=dataset_loader_train,
+            model=model,
+            grid_search=grid_search_params,
+            save_results=str(results_csv),
+            )
         dataset_loader_train.assert_called_with()
-        GridSearchCV.assert_called_with(model, refit=False, verbose=4)
-        GridSearchCV().fit.assert_called_with(X, y)
+        GridSearchCVWithScores.assert_called_with(model, refit=False, verbose=4)
+        GridSearchCVWithScores().fit.assert_called_with(X, y)
+        assert result is GridSearchCVWithScores()
+        scores = GridSearchCVWithScores().cv_results_
+        assert (str(pandas.DataFrame(scores)).strip() ==
+                capsys.readouterr()[0].strip())
+        assert (str(pandas.DataFrame(scores)).strip() ==
+                str(pandas.read_csv(str(results_csv))).strip())
 
     def test_no_score_method_raises(self, grid_search):
         model, dataset_loader_train = Mock(spec=['fit', 'predict']), Mock()
@@ -288,30 +295,28 @@ class TestGridSearch:
             grid_search(dataset_loader_train, model,
                         {'scoring': 'f1'}, scoring='accuracy')
 
-    def test_two_scores_priority(self, grid_search):
+    def test_two_scores_priority(self, grid_search, GridSearchCVWithScores):
         # 'scoring' has higher priority than 'model.score'
         model = Mock(spec=['fit', 'predict', 'score'])
         dataset_loader_train = Mock()
         scoring = Mock()
         dataset_loader_train.return_value = object(), object()
 
-        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-            grid_search(dataset_loader_train, model, {}, scoring=scoring)
-        GridSearchCV.assert_called_with(
+        grid_search(dataset_loader_train, model, {}, scoring=scoring)
+        GridSearchCVWithScores.assert_called_with(
             model, refit=False, scoring=scoring)
 
-    def test_deprecated_scoring(self, grid_search):
+    def test_deprecated_scoring(self, grid_search, GridSearchCVWithScores):
         # 'scoring' inside of 'grid_search' is deprecated
         model = Mock(spec=['fit', 'predict', 'score'])
         dataset_loader_train = Mock()
         scoring = Mock()
         dataset_loader_train.return_value = object(), object()
 
-        with patch('palladium.fit.GridSearchCV') as GridSearchCV:
-            with pytest.warns(DeprecationWarning):
-                grid_search(dataset_loader_train, model,
-                            {'scoring': scoring}, scoring=None)
-        GridSearchCV.assert_called_with(
+        with pytest.warns(DeprecationWarning):
+            grid_search(dataset_loader_train, model,
+                        {'scoring': scoring}, scoring=None)
+        GridSearchCVWithScores.assert_called_with(
             model, refit=False, scoring=scoring)
 
     def test_grid_search(self, grid_search):
