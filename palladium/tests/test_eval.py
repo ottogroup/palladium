@@ -49,6 +49,23 @@ class TestTest:
         scorer.assert_called_with(model, X, y)
         assert model.score.call_count == 0
 
+    def test_scoring_dict(self, test):
+        dataset_loader_test, model_persister = Mock(), Mock()
+        scoring = {'AUC': Mock(), 'accuracy': Mock()}
+        scoring['AUC'].return_value = 1.23
+        scoring['accuracy'].return_value = 3.45
+        X, y = object(), object()
+        dataset_loader_test.return_value = X, y
+        model = model_persister.read.return_value
+        model.__metadata__ = {'version': 77}
+
+        result = test(dataset_loader_test, model_persister,
+                      scoring=scoring, model_version=77)
+
+        scoring['AUC'].assert_called_with(model, X, y)
+        scoring['accuracy'].assert_called_with(model, X, y)
+        assert sorted(result) == ['AUC: 1.23', 'accuracy: 3.45']
+
 
 class TestList:
     @pytest.fixture

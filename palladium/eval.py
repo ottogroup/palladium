@@ -33,14 +33,18 @@ def test(dataset_loader_test, model_persister,
             )
 
     with timer(logger.info, "Applying model"):
+        scores = []
         if scoring is not None:
-            scorer = get_scorer(scoring)
-            score = scorer(model, X, y)
+            if not isinstance(scoring, dict):
+                scoring = {'score': scoring}
+            for key, scorer in scoring.items():
+                scorer = get_scorer(scorer)
+                scores.append("{}: {}".format(key, scorer(model, X, y)))
         else:
-            score = model.score(X, y)
+            scores.append("score: {}".format(model.score(X, y)))
 
-    logger.info("Score: {}.".format(score))
-    return score
+    logger.info("Score: {}.".format('\n       '.join(scores)))
+    return scores
 
 
 def test_cmd(argv=sys.argv[1:]):  # pragma: no cover
