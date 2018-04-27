@@ -8,6 +8,8 @@ source:
   path: ..
 
 build:
+  script_env:
+   - CONDA_BLD_PATH
   # noarch_python: True
   preserve_egg_dir: True
   entry_points:
