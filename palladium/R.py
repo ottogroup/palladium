@@ -6,11 +6,15 @@ from palladium.interfaces import Model
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
-from pandas.rpy.common import convert_to_r_dataframe
 from rpy2 import robjects
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.pandas2ri import py2ri
 from rpy2.robjects.numpy2ri import numpy2ri
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
+
+
+pandas2ri.activate()
 
 
 class ObjectMixin:
@@ -41,7 +45,7 @@ class AbstractModel(Model, ObjectMixin):
     @staticmethod
     def _from_python(obj):
         if isinstance(obj, DataFrame):
-            obj = convert_to_r_dataframe(obj)
+            obj = py2ri(obj)
         elif isinstance(obj, Series):
             obj = numpy2ri(obj.values)
         elif isinstance(obj, np.ndarray):
