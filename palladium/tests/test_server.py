@@ -660,6 +660,45 @@ class TestUpdateModelCacheFunctional:
         assert resp.status_code == 503
 
 
+class TestActivateFunctional:
+    @pytest.fixture
+    def activate(self):
+        from palladium.server import activate
+        return activate
+
+    @pytest.fixture
+    def activate_base_mock(self, monkeypatch):
+        func = Mock()
+        monkeypatch.setattr('palladium.server.activate_base', func)
+        return func
+
+    def test_success(self, activate, activate_base_mock, config, flask_app):
+        model_persister = Mock(
+            list_models=lambda: {'be': 'first'},
+            list_properties=lambda: {'be': 'twice'},
+            )
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(
+            method='POST',
+            data={'model_version': 123},
+        ):
+            resp = activate()
+        assert resp.status_code == 200
+        assert resp.json == {
+            'models': {'be': 'first'},
+            'properties': {'be': 'twice'},
+            }
+
+    def test_lookuperror(self, activate, activate_base_mock, flask_app):
+        activate_base_mock.side_effect = LookupError
+        with flask_app.test_request_context(
+            method='POST',
+            data={'model_version': 123},
+        ):
+            resp = activate()
+        assert resp.status_code == 503
+
+
 def _test_add_url_rule_func():
     return b'A OK'
 

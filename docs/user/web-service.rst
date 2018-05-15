@@ -186,8 +186,8 @@ some example output:
        "properties": {"active-model": "8", "db-version": "1.2"}
    }
 
-Fit and Update Model Cache
---------------------------
+Fit, Update Model Cache, and Activate
+-------------------------------------
 
 Palladium allows for periodic updates of the model by use of the
 :class:`palladium.persistence.CachedUpdatePersister`.  For this to
@@ -283,3 +283,10 @@ endpoints is this:
             'methods': ['POST'],
         },
     ],
+
+Another endpoint that's not registered by default is */activate*,
+which works just like its command line counterpart: it takes a model
+version and activates it in the model persister such that the next
+prediction will use the active model.  The handler can be found at
+:func:`palladium.server.activate`.  It requires a request parameter
+called ``model_version``.

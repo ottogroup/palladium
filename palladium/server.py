@@ -12,6 +12,7 @@ import ujson
 from werkzeug.exceptions import BadRequest
 
 from . import __version__
+from .fit import activate as activate_base
 from .fit import fit as fit_base
 from .interfaces import PredictError
 from .util import args_from_config
@@ -411,6 +412,17 @@ def update_model_cache(model_persister):
         return make_ujson_response({'job_id': job_id}, status_code=200)
     else:
         return make_ujson_response({}, status_code=503)
+
+
+@PluggableDecorator('activate_decorators')
+def activate():
+    model_version = int(request.form['model_version'])
+    try:
+        activate_base(model_version=model_version)
+    except LookupError:
+        return make_ujson_response({}, status_code=503)
+    else:
+        return list()
 
 
 def add_url_rule(rule, endpoint=None, view_func=None, app=app, **options):
