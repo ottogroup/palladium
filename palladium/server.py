@@ -402,7 +402,6 @@ def fit():
     return make_ujson_response({'job_id': job_id}, status_code=200)
 
 
-@app.route('/update-model-cache', methods=['POST'])
 @PluggableDecorator('update_model_cache_decorators')
 @args_from_config
 def update_model_cache(model_persister):
