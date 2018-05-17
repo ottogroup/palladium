@@ -622,11 +622,14 @@ class CachedUpdatePersister(ModelPersister):
         active_version = None
 
         if self.check_version:
-            active_version = self.list_properties()['active-model']
+            active_version = self.list_properties().get('active-model')
             if self._loaded_version == (active_version, args, kwargs):
                 return
 
-        model = self.impl.read(*args, **kwargs)
+        try:
+            model = self.impl.read(*args, **kwargs)
+        except LookupError:
+            model = None
         if model is not None:
             self.cache[self.__pld_config_key__] = model
 
