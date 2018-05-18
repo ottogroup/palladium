@@ -385,7 +385,7 @@ def list(model_persister):
     return make_ujson_response(info)
 
 
-@PluggableDecorator('fit_decorators')
+@PluggableDecorator('server_fit_decorators')
 @args_from_config
 def fit():
     param_converters = {
