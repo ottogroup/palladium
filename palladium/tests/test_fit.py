@@ -319,6 +319,30 @@ class TestGridSearch:
         GridSearchCVWithScores.assert_called_with(
             model, refit=False, scoring=scoring)
 
+    def test_persist_best_requires_persister(self, grid_search):
+        model = Mock(spec=['fit', 'predict'])
+        dataset_loader_train = Mock()
+        scoring = Mock()
+        dataset_loader_train.return_value = object(), object()
+
+        with pytest.raises(ValueError):
+            grid_search(dataset_loader_train, model, {}, scoring=scoring,
+                        persist_best=True)
+
+    def test_persist_best(self, grid_search, GridSearchCVWithScores):
+        model = Mock(spec=['fit', 'predict'])
+        dataset_loader_train = Mock()
+        scoring = Mock()
+        model_persister = Mock()
+        dataset_loader_train.return_value = object(), object()
+
+        grid_search(dataset_loader_train, model, {}, scoring=scoring,
+                    persist_best=True, model_persister=model_persister)
+        GridSearchCVWithScores.assert_called_with(
+            model, refit=True, scoring=scoring)
+        model_persister.write.assert_called_with(
+            GridSearchCVWithScores().best_estimator_)
+
     def test_grid_search(self, grid_search):
         model, dataset_loader_train = Mock(), Mock()
         dataset_loader_train.return_value = (

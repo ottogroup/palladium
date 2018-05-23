@@ -20,6 +20,15 @@ from .util import PluggableDecorator
 from .util import timer
 
 
+def _persist_model(model, model_persister, activate=True):
+    annotate(model, {'train_timestamp': datetime.now().isoformat()})
+    with timer(logger.info, "Writing model"):
+        version = model_persister.write(model)
+    logger.info("Wrote model with version {}.".format(version))
+    if activate:
+        model_persister.activate(version)
+
+
 @PluggableDecorator('fit_decorators')
 @args_from_config
 def fit(dataset_loader_train, model, model_persister, persist=True,
@@ -72,12 +81,7 @@ def fit(dataset_loader_train, model, model_persister, persist=True,
             logger.info("Not persisting model that has a test score "
                         "{} < {}".format(score_test, persist_if_better_than))
         else:
-            annotate(model, {'train_timestamp': datetime.now().isoformat()})
-            with timer(logger.info, "Writing model"):
-                version = model_persister.write(model)
-            logger.info("Wrote model with version {}.".format(version))
-            if activate:
-                model_persister.activate(version)
+            _persist_model(model, model_persister, activate=activate)
 
     return model
 
@@ -162,12 +166,18 @@ Options:
 
 @args_from_config
 def grid_search(dataset_loader_train, model, grid_search, scoring=None,
-                save_results=None):
+                save_results=None, persist_best=False, model_persister=None):
+    if persist_best and model_persister is None:
+        raise ValueError(
+            "Cannot persist the best model without a model_persister. Please "
+            "specify one in your Palladium configuration file."
+            )
+
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
     grid_search_kwargs = {
-        'refit': False,
+        'refit': persist_best,
         }
     grid_search_kwargs.update(grid_search)
 
@@ -197,13 +207,15 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None,
         gs.fit(X, y)
 
     results = pandas.DataFrame(gs.cv_results_)
-    if save_results:
-        results.to_csv(save_results, index=False)
     pandas.options.display.max_rows = len(results)
     pandas.options.display.max_columns = len(results.columns)
     if 'rank_test_score' in results:
         results = results.sort_values('rank_test_score')
     print(results)
+    if save_results:
+        results.to_csv(save_results, index=False)
+    if persist_best:
+        _persist_model(gs.best_estimator_, model_persister, activate=True)
     return gs
 
 
@@ -220,8 +232,12 @@ Usage:
 
 Options:
   --save-results=<fname>   Save results to CSV file
+  --persist-best           Persist the best model from grid search
   -h --help                Show this screen.
 """
     arguments = docopt(grid_search_cmd.__doc__, argv=argv)
     initialize_config(__mode__='fit')
-    grid_search(save_results=arguments['--save-results'])
+    grid_search(
+        save_results=arguments['--save-results'],
+        persist_best=arguments['--persist-best'],
+        )
