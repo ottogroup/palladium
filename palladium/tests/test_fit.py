@@ -24,6 +24,7 @@ class TestFit:
 
     def test_it(self, fit):
         model, dataset_loader_train, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
 
@@ -38,6 +39,7 @@ class TestFit:
 
     def test_no_persist(self, fit):
         model, dataset_loader_train, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
 
@@ -51,6 +53,7 @@ class TestFit:
 
     def test_evaluate_no_test_dataset(self, fit):
         model, dataset_loader_train, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
         X, y = object(), object()
         dataset_loader_train.return_value = X, y
 
@@ -66,6 +69,7 @@ class TestFit:
 
     def test_evaluate_with_test_dataset(self, fit):
         model, dataset_loader_train, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
         dataset_loader_test = Mock()
         X, y, X_test, y_test = object(), object(), object(), object()
         dataset_loader_train.return_value = X, y
@@ -86,6 +90,7 @@ class TestFit:
 
     def test_evaluate_annotations(self, fit, dataset_loader):
         model = Mock()
+        del model.cv_results_
         model.score.side_effect = [0.9, 0.8]
 
         result = fit(
@@ -101,6 +106,7 @@ class TestFit:
 
     def test_evaluate_scoring(self, fit, dataset_loader):
         model = Mock()
+        del model.cv_results_
         scorer = Mock()
         scorer.side_effect = [0.99, 0.01]
 
@@ -118,6 +124,7 @@ class TestFit:
     def test_evaluate_no_score(self, fit, dataset_loader):
         model = Mock()
         del model.score
+        del model.cv_results_
 
         with pytest.raises(ValueError):
             fit(
@@ -131,6 +138,7 @@ class TestFit:
     def test_persist_if_better_than(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
         model.score.return_value = 0.9
+        del model.cv_results_
 
         result = fit(
             dataset_loader_train=dataset_loader,
@@ -146,6 +154,7 @@ class TestFit:
     def test_persist_if_better_than_false(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
         model.score.return_value = 0.9
+        del model.cv_results_
 
         result = fit(
             dataset_loader_train=dataset_loader,
@@ -161,6 +170,7 @@ class TestFit:
     def test_persist_if_better_than_persist_false(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
         model.score.return_value = 0.9
+        del model.cv_results_
 
         result = fit(
             dataset_loader_train=dataset_loader,
@@ -177,6 +187,7 @@ class TestFit:
     def test_persist_if_better_than_no_dataset_test(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
         model.score.return_value = 0.9
+        del model.cv_results_
 
         with pytest.raises(ValueError):
             fit(
@@ -189,6 +200,7 @@ class TestFit:
 
     def test_activate_no_persist(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
+        del model.cv_results_
 
         result = fit(
             dataset_loader_train=dataset_loader,
@@ -201,6 +213,7 @@ class TestFit:
 
     def test_timestamp(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
+        del model.cv_results_
 
         def persist(model):
             assert 'train_timestamp' in model.__metadata__
@@ -218,6 +231,30 @@ class TestFit:
 
         timestamp = parse(model.__metadata__['train_timestamp'])
         assert before_fit < timestamp < after_fit
+        model_persister.write.assert_called_with(model)
+
+    def test_cv_results(self, fit, dataset_loader):
+        model, model_persister = Mock(), Mock()
+        model.cv_results_ = {
+            'mean_train_score': [3, 2, 1],
+            'mean_test_score': [1, 2, 3],
+            }
+
+        def persist(model):
+            assert 'cv_results' in model.__metadata__
+
+        model_persister.write.side_effect = persist
+
+        result = fit(
+            dataset_loader,
+            model,
+            model_persister,
+            )
+        assert result is model
+
+        cv_results = model.__metadata__['cv_results']
+        cv_results = pandas.read_json(cv_results).to_dict(orient='list')
+        assert cv_results == model.cv_results_
         model_persister.write.assert_called_with(model)
 
 
@@ -321,6 +358,7 @@ class TestGridSearch:
 
     def test_persist_best_requires_persister(self, grid_search):
         model = Mock(spec=['fit', 'predict'])
+        del model.cv_results_
         dataset_loader_train = Mock()
         scoring = Mock()
         dataset_loader_train.return_value = object(), object()
@@ -331,6 +369,7 @@ class TestGridSearch:
 
     def test_persist_best(self, grid_search, GridSearchCVWithScores):
         model = Mock(spec=['fit', 'predict'])
+        del model.cv_results_
         dataset_loader_train = Mock()
         scoring = Mock()
         model_persister = Mock()
@@ -341,7 +380,7 @@ class TestGridSearch:
         GridSearchCVWithScores.assert_called_with(
             model, refit=True, scoring=scoring)
         model_persister.write.assert_called_with(
-            GridSearchCVWithScores().best_estimator_)
+            GridSearchCVWithScores())
 
     def test_grid_search(self, grid_search):
         model, dataset_loader_train = Mock(), Mock()

@@ -596,6 +596,7 @@ class TestFitFunctional:
 
     def test_it(self, fit, config, jobs, flask_app):
         dsl, model, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
         X, y = Mock(), Mock()
         dsl.return_value = X, y
         config['dataset_loader_train'] = dsl

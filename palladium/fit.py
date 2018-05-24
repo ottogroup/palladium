@@ -21,7 +21,14 @@ from .util import timer
 
 
 def _persist_model(model, model_persister, activate=True):
-    annotate(model, {'train_timestamp': datetime.now().isoformat()})
+    metadata = {
+        'train_timestamp': datetime.now().isoformat(),
+        }
+    cv_results = getattr(model, 'cv_results_', None)
+    if cv_results is not None:
+        json_str = pandas.DataFrame(cv_results).to_json(orient='records')
+        metadata['cv_results'] = json_str
+    annotate(model, metadata)
     with timer(logger.info, "Writing model"):
         version = model_persister.write(model)
     logger.info("Wrote model with version {}.".format(version))
@@ -215,7 +222,7 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None,
     if save_results:
         results.to_csv(save_results, index=False)
     if persist_best:
-        _persist_model(gs.best_estimator_, model_persister, activate=True)
+        _persist_model(gs, model_persister, activate=True)
     return gs
 
 
