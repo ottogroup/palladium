@@ -312,7 +312,9 @@ accuracy of the model with *C* set to ``1.0`` (``params``) is ``0.95``
 accuracies in the cross-validation folds is ``0.051585``.
 
 You can also ask to save these results by passing a CSV filename to
-the ``--save-results`` option.
+the ``--save-results`` option.  If you want to persist the best model
+out of the grid search, run ``pld-grid-search`` with the
+``--persist-best`` flag.
 
 Let us take a look at the configuration of ``grid_search``:
 
