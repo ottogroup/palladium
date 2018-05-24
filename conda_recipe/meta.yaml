@@ -37,6 +37,7 @@ requirements:
     - numpy
     - pandas
     - psutil
+    - python-dateutil
     - scikit-learn
     - sqlalchemy
     - ujson
@@ -54,6 +55,7 @@ requirements:
     - numpy
     - pandas
     - psutil
+    - python-dateutil
     - scikit-learn
     - sqlalchemy
     - ujson
