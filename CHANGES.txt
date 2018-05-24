@@ -1,5 +1,23 @@
-v1.2 - unreleased
-=================
+v1.2b1 - 2018-05-24
+===================
+
+- Update use of rpy2, no longer used deprecated pandas.rpy module.
+
+- Save `model.cv_results_` in model's metadata if it exists.
+
+- The best model of a grid search can now be persisted using the
+  `--persist-best` flag.
+
+- Grid search results can now be saved using the `--save-results`
+  option.
+
+- A `/activate` endpoint allows for activating a certain model version
+  through the web.
+
+- A `/refit` API endpoint that allows fitting a model to be triggered
+  through the web.
+
+- A new `/list` API endpoint that works similar to the pld-list CLI
 
 - A `scoring` variable in the configuration root, if defined, will be
   used for both pld-test and pld-grid-search
