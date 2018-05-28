@@ -35,12 +35,15 @@ logger = logging.getLogger('palladium')
 def resolve_dotted_name(dotted_name):
     if ':' in dotted_name:
         module, name = dotted_name.split(':')
-    else:
+    elif '.' in dotted_name:
         module, name = dotted_name.rsplit('.', 1)
+    else:
+        module, name = dotted_name, None
 
     attr = import_module(module)
-    for name in name.split('.'):
-        attr = getattr(attr, name)
+    if name:
+        for name in name.split('.'):
+            attr = getattr(attr, name)
 
     return attr
 
