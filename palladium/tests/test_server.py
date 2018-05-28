@@ -171,6 +171,67 @@ class TestPredictService:
         assert sample[0] == 'myflower'
         assert sample[1] == 3
 
+    def test_unwrap_sample_get(self, PredictService, flask_app):
+        predict_service = PredictService(
+            mapping=[('text', 'str')],
+            unwrap_sample=True,
+            )
+        model = Mock()
+        model.predict.return_value = np.array([1])
+        with flask_app.test_request_context():
+            request = Mock(
+                args=dict([
+                    ('text', 'Hi this is text'),
+                    ]),
+                method='GET',
+                )
+            resp = predict_service(model, request)
+
+        assert model.predict.call_args[0][0].ndim == 1
+        model.predict.assert_called_with(np.array(['Hi this is text']))
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp.status_code == 200
+        assert resp_data == {
+            "metadata": {
+                "status": "OK",
+                "error_code": 0,
+                },
+            "result": 1,
+            }
+
+    def test_unwrap_sample_post(self, PredictService, flask_app):
+        predict_service = PredictService(
+            mapping=[('text', 'str')],
+            unwrap_sample=True,
+            )
+        model = Mock()
+        model.predict.return_value = np.array([1, 2])
+        with flask_app.test_request_context():
+            request = Mock(
+                json=[
+                    {'text': 'First piece of text'},
+                    {'text': 'Second piece of text'},
+                    ],
+                method='POST',
+                mimetype='application/json',
+                )
+            resp = predict_service(model, request)
+
+        assert model.predict.call_args[0][0].ndim == 1
+        assert (
+            model.predict.call_args[0] ==
+            np.array(['First piece of text', 'Second piece of text'])
+            ).all()
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp.status_code == 200
+        assert resp_data == {
+            "metadata": {
+                "status": "OK",
+                "error_code": 0,
+                },
+            "result": [1, 2],
+            }
+
     def test_probas(self, PredictService, flask_app):
         model = Mock()
         model.predict_proba.return_value = np.array([[0.1, 0.5, math.pi]])
