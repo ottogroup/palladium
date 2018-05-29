@@ -24,6 +24,9 @@ class TestResolveDottedName:
         assert (resolve_dotted_name(dotted) is
                 TestResolveDottedName)
 
+    def test_module(self, resolve_dotted_name):
+        resolve_dotted_name('threading') is threading
+
 
 def test_args_from_config(config):
     from palladium.util import args_from_config
