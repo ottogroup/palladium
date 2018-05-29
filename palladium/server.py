@@ -59,9 +59,15 @@ class PredictService:
         }
 
     def __init__(
-            self, mapping, params=(), entry_point='/predict',
-            decorator_list_name='predict_decorators',
-            predict_proba=False, **kwargs):
+        self,
+        mapping,
+        params=(),
+        entry_point='/predict',
+        decorator_list_name='predict_decorators',
+        predict_proba=False,
+        unwrap_sample=False,
+        **kwargs
+    ):
         """
         :param mapping:
           A list of query parameters and their type that should be
@@ -85,12 +91,19 @@ class PredictService:
           Instead of returning a single class (the default), when
           *predict_proba* is set to true, the result will instead
           contain a list of class probabilities.
+
+        :param unwrap_sample:
+          When working with text, scikit-learn and others will
+          sometimes expect the input to be a 1d array of strings
+          rather than a 2d array.  Setting *unwrap_sample* to true
+          will use this representation.
         """
         self.mapping = mapping
         self.params = params
         self.entry_point = entry_point
         self.decorator_list_name = decorator_list_name
         self.predict_proba = predict_proba
+        self.unwrap_sample = unwrap_sample
         vars(self).update(kwargs)
 
     def initialize_component(self, config):
@@ -132,7 +145,11 @@ class PredictService:
         for key, type_name in self.mapping:
             value_type = self.types[type_name]
             values.append(value_type(data[key]))
-        return np.array(values, dtype=object)
+        if self.unwrap_sample:
+            assert len(values) == 1
+            return np.array(values[0])
+        else:
+            return np.array(values, dtype=object)
 
     def params_from_data(self, model, data):
         """Retrieve additional parameters (keyword arguments) for
