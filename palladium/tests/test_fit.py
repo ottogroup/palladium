@@ -285,7 +285,8 @@ class TestGridSearch:
             }
 
         GridSearchCV = Mock()
-        monkeypatch.setattr('palladium.fit.GridSearchCV', GridSearchCV)
+        monkeypatch.setattr(
+            'palladium.fit.GridSearchCV', GridSearchCV)
         GridSearchCV().cv_results_ = scores
         return GridSearchCV
 
@@ -397,7 +398,8 @@ class TestGridSearch:
         scores = {
             'mean_test_score': [0.1, 0.2],
             'std_test_score': [0.06463643, 0.05073433],
-            'params': [{'C': 0.1}, {'C': 0.3}]}
+            'params': [{'C': 0.1}, {'C': 0.3}],
+            }
         with patch('palladium.fit.GridSearchCV') as GridSearchCV:
             GridSearchCV().cv_results_ = scores
             grid_search(dataset_loader_train, model, grid_search_params)
@@ -405,6 +407,48 @@ class TestGridSearch:
         GridSearchCV.assert_called_with(model, refit=False,
                                         cv=CVIterator.return_value)
         CVIterator.assert_called_with(n=10, p=2)
+
+    def test_grid_search_with_instance(self, grid_search):
+        scores = {
+            'mean_test_score': [0.1, 0.2],
+            'std_test_score': [0.06463643, 0.05073433],
+            'params': [{'C': 0.1}, {'C': 0.3}],
+            }
+        model, dataset_loader_train = Mock(), Mock()
+        X, y = np.random.random((10, 10)), np.random.random(10)
+        dataset_loader_train.return_value = X, y
+        search = Mock()
+        search.cv_results_ = scores
+        grid_search(dataset_loader_train, model, grid_search=search)
+        search.fit.assert_called_with(X, y)
+
+
+class TestWithParallelBackend:
+    @pytest.fixture
+    def with_parallel_backend(self):
+        from palladium.fit import with_parallel_backend
+        return with_parallel_backend
+
+    @pytest.fixture
+    def estimator(self):
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.linear_model import LogisticRegression
+
+        return GridSearchCV(
+            LogisticRegression(),
+            param_grid={'C': [0.001, 0.01]},
+            )
+
+    @pytest.mark.parametrize('backend', ['threading', 'sequential'])
+    def test_it(self, with_parallel_backend, estimator, backend):
+        X, y = np.random.random((10, 10)), np.random.randint(0, 2, 10)
+        with_parallel_backend(estimator, backend).fit(X, y)
+        with_parallel_backend(estimator, backend).predict(X)
+
+    def test_bad(self, with_parallel_backend, estimator):
+        X, y = np.random.random((10, 10)), np.random.randint(0, 2, 10)
+        with pytest.raises(KeyError):
+            with_parallel_backend(estimator, 'foo').fit(X, y)
 
 
 class TestFitMode():

@@ -165,6 +165,51 @@ passed at runtime.
         }
 
 
+Can I use my cluster to run a hyperparameter search?
+====================================================
+
+Yes.  We support using `dask.distributed
+<http://distributed.readthedocs.io>`_ for distributing jobs among many
+computers.  To install the necessary packages, run ``pip install dask
+distributed``.
+
+Here's a piece of configuration that will use Dask workers to run the
+grid search:
+
+.. code-block:: python
+
+    'grid_search': {
+        '__factory__': 'palladium.fit.with_parallel_backend',
+        'estimator': {
+            '__factory__': 'sklearn.model_selection.GridSearchCV',
+            'estimator': {'__copy__': 'model'},
+            'param_grid': {
+                'C': [0.1, 0.3, 1.0],
+            },
+            'n_jobs': -1,
+        },
+        'backend': 'dask.distributed',
+        'scheduler_host': '127.0.0.1:8786',
+    },
+
+    '_init_distributed': {
+        '__factory__': 'palladium.util.resolve_dotted_name',
+        'dotted_name': 'distributed.joblib.joblib',
+    },
+
+To start up the Dask scheduler and workers you can follow the
+dask.distributed documentation.  Here's an example that runs three
+workers locally:
+
+.. code-block:: bash
+
+    $ dask-scheduler
+    Scheduler started at 127.0.0.1:8786
+
+    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786    
+
 How can I use test Palladium components in a shell?
 ===================================================
 
