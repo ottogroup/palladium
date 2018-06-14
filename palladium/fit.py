@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from docopt import docopt
 import pandas
-from pprint import pformat
+from sklearn.externals.joblib import parallel_backend
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import GridSearchCV
 
@@ -171,6 +171,23 @@ Options:
         delete(model_version=int(arguments['<version>']))
 
 
+def with_parallel_backend(
+    estimator,
+    backend,
+    methods=('fit', 'predict', 'predict_proba'),
+    **backend_params
+):
+    def wrapper(func):
+        def wrapped(*args, **kwargs):
+            with parallel_backend(backend, **backend_params):
+                return func(*args, **kwargs)
+        return wrapped
+
+    for name in methods:
+        setattr(estimator, name, wrapper(getattr(estimator, name)))
+    return estimator
+
+
 @args_from_config
 def grid_search(dataset_loader_train, model, grid_search, scoring=None,
                 save_results=None, persist_best=False, model_persister=None):
@@ -183,37 +200,41 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None,
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_train()
 
-    grid_search_kwargs = {
-        'refit': persist_best,
-        }
-    grid_search_kwargs.update(grid_search)
+    if isinstance(grid_search, dict):
+        search_kwargs = {
+            'refit': persist_best,
+            }
+        search_kwargs.update(grid_search)
 
-    cv = grid_search_kwargs.get('cv', None)
-    if callable(cv):
-        grid_search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
+        cv = search_kwargs.get('cv', None)
+        if callable(cv):
+            search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
 
-    if 'scoring' in grid_search_kwargs:
-        warn("Use of 'scoring' inside of 'grid_search' is deprecated. "
-             "To fix, move 'scoring' up to the top level of the configuration "
-             "dict.", DeprecationWarning)
-        if scoring is not None:
-            raise ValueError("You cannot define 'scoring' in 'grid_search' "
-                             "and globally.")
-        scoring = grid_search_kwargs['scoring']
-    elif scoring is not None:
-        grid_search_kwargs['scoring'] = scoring
+        if 'scoring' in search_kwargs:
+            warn("Use of 'scoring' inside of 'grid_search' is deprecated. "
+                 "To fix, move 'scoring' up to the top level of the configuration "
+                 "dict.", DeprecationWarning)
+            if scoring is not None:
+                raise ValueError("You cannot define 'scoring' in 'grid_search' "
+                                 "and globally.")
+            scoring = search_kwargs['scoring']
+        elif scoring is not None:
+            search_kwargs['scoring'] = scoring
 
-    if not (hasattr(model, 'score') or scoring is not None):
-        raise ValueError(
-            "Your model doesn't seem to implement a 'score' method.  You may "
-            "want to define a 'scoring' option in the configuration."
-            )
+        if not (hasattr(model, 'score') or scoring is not None):
+            raise ValueError(
+                "Your model doesn't seem to implement a 'score' method.  You may "
+                "want to define a 'scoring' option in the configuration."
+                )
+
+        search = GridSearchCV(model, **search_kwargs)
+    else:
+        search = grid_search
 
     with timer(logger.info, "Running grid search"):
-        gs = GridSearchCV(model, **grid_search_kwargs)
-        gs.fit(X, y)
+        search.fit(X, y)
 
-    results = pandas.DataFrame(gs.cv_results_)
+    results = pandas.DataFrame(search.cv_results_)
     pandas.options.display.max_rows = len(results)
     pandas.options.display.max_columns = len(results.columns)
     if 'rank_test_score' in results:
@@ -222,8 +243,8 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None,
     if save_results:
         results.to_csv(save_results, index=False)
     if persist_best:
-        _persist_model(gs, model_persister, activate=True)
-    return gs
+        _persist_model(search, model_persister, activate=True)
+    return search
 
 
 def grid_search_cmd(argv=sys.argv[1:]):  # pragma: no cover
