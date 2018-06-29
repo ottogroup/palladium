@@ -1,5 +1,13 @@
-v1.2b2 - Unreleased
+v1.2.0 - 2018-06-29
 ===================
+
+- You can now run grid searches across a cluster of computers.  See
+  the FAQ entry "Can I use my cluster to run a hyperparameter search?"
+  for an example.
+
+- PredictService now has better support for text predictions (which
+  use 1d arrays of strings instead of 2d matrices as inputs) with the
+  `unwrap_sample` option.
 
 v1.2b1 - 2018-05-24
 ===================
