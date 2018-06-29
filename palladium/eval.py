@@ -5,6 +5,7 @@ from pprint import pprint
 import sys
 
 from docopt import docopt
+from sklearn.metrics import get_scorer
 
 from .util import args_from_config
 from .util import initialize_config
@@ -13,7 +14,8 @@ from .util import timer
 
 
 @args_from_config
-def test(dataset_loader_test, model_persister, model_version=None):
+def test(dataset_loader_test, model_persister,
+         scoring=None, model_version=None):
 
     with timer(logger.info, "Loading data"):
         X, y = dataset_loader_test()
@@ -24,15 +26,25 @@ def test(dataset_loader_test, model_persister, model_version=None):
     logger.info(
         'Loaded model version {}'.format(model.__metadata__['version']))
 
-    if not hasattr(model, 'score'):
+    if not (hasattr(model, 'score') or scoring is not None):
         raise ValueError(
-            "Your model doesn't seem to implement a 'score' method."
+            "Your model doesn't seem to implement a 'score' method.  You may "
+            "want to define a 'scoring' option in the configuration."
             )
 
     with timer(logger.info, "Applying model"):
-        score = model.score(X, y)
+        scores = []
+        if scoring is not None:
+            if not isinstance(scoring, dict):
+                scoring = {'score': scoring}
+            for key, scorer in scoring.items():
+                scorer = get_scorer(scorer)
+                scores.append("{}: {}".format(key, scorer(model, X, y)))
+        else:
+            scores.append("score: {}".format(model.score(X, y)))
 
-    logger.info("Score: {}.".format(score))
+    logger.info("Score: {}.".format('\n       '.join(scores)))
+    return scores
 
 
 def test_cmd(argv=sys.argv[1:]):  # pragma: no cover

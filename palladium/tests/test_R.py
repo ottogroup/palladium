@@ -11,7 +11,7 @@ import pytest
 
 
 pytest.importorskip("rpy2")
-from pandas.rpy.common import convert_robj
+from rpy2.robjects.pandas2ri import ri2py
 
 
 @pytest.fixture
@@ -74,8 +74,8 @@ class TestAbstractModel:
         model = Model(scriptname='myscript', funcname='myfunc', some='kwarg')
         model.fit(X, y)
         funcargs = model.r['myfunc'].call_args
-        assert (convert_robj(funcargs[0][0]) == X).all().all()
-        assert (convert_robj(funcargs[0][1]) == y).all()
+        assert (ri2py(funcargs[0][0]).values == X.values).all()
+        assert (ri2py(funcargs[0][1]) == y).all()
         assert funcargs[1]['some'] == 'kwarg'
 
 
@@ -113,7 +113,7 @@ class TestClassificationModel(TestAbstractModel):
         result = model.predict(X)
         predictargs = model.r['predict'].call_args
         assert predictargs[0][0] is model.rmodel_
-        assert (convert_robj(predictargs[0][1]) == X).all().all()
+        assert (ri2py(predictargs[0][1]).values == X.values).all()
         assert predictargs[1]['type'] == 'prob'
         assert (result ==
                 numpy.argmax(model.r['predict'].return_value, axis=1)).all()

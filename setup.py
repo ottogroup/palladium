@@ -10,6 +10,7 @@ install_requires = [
     'numpy',
     'pandas',
     'psutil',
+    'requests',
     'scikit-learn',
     'sqlalchemy',
     'ujson',
@@ -18,6 +19,7 @@ install_requires = [
 tests_require = [
     'pytest',
     'pytest-cov',
+    'requests-mock',
     ]
 
 docs_require = [
@@ -29,8 +31,8 @@ docs_require = [
 
 here = os.path.abspath(os.path.dirname(__file__))
 try:
-    README = open(os.path.join(here, 'README.rst')).read()
-    CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+    README = open(os.path.join(here, 'README.rst'), encoding='utf-8').read()
+    CHANGES = open(os.path.join(here, 'CHANGES.txt'), encoding='utf-8').read()
 except IOError:
     README = CHANGES = ''
 
@@ -47,7 +49,6 @@ setup(name='palladium',
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: Apache Software License',
-          'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
       ],

@@ -1,43 +1,11 @@
 from datetime import datetime
+import threading
 from time import sleep
 from unittest.mock import Mock
-from unittest.mock import MagicMock
-from unittest.mock import call
-from unittest.mock import mock_open
 from unittest.mock import patch
 
 from dateutil import rrule
 import pytest
-
-
-class MyDummyComponent:
-    def __init__(self, arg1, arg2='blargh', subcomponent=None):
-        self.arg1 = arg1
-        self.arg2 = arg2
-        self.subcomponent = subcomponent
-        self.initialize_component_arg = None
-
-    def initialize_component(self, config):
-        self.initialize_component_arg = config
-
-
-def test_create_component():
-    from palladium.util import create_component
-
-    result = create_component({
-        '__factory__': 'palladium.tests.test_util.MyDummyComponent',
-        'arg1': 3,
-        })
-    assert isinstance(result, MyDummyComponent)
-    assert result.arg1 == 3
-    assert result.arg2 == 'blargh'
-
-
-def test_config_class_keyerror():
-    from palladium.util import Config
-    with pytest.raises(KeyError) as e:
-        Config({})['invalid']
-    assert "Maybe you forgot to set" in str(e.value)
 
 
 class TestResolveDottedName:
@@ -56,194 +24,8 @@ class TestResolveDottedName:
         assert (resolve_dotted_name(dotted) is
                 TestResolveDottedName)
 
-
-class TestInitializeConfigImpl:
-    @pytest.fixture
-    def _initialize_config(self):
-        from palladium.util import _initialize_config
-        return _initialize_config
-
-    def test_initialize_config(self, _initialize_config):
-        dummy = 'palladium.tests.test_util.MyDummyComponent'
-        config = {
-            'mycomponent': {
-                '__factory__': dummy,
-                'arg1': 3,
-                'arg2': {'no': 'factory'},
-                'subcomponent': {
-                    '__factory__': dummy,
-                    'arg1': {
-                        'subsubcomponent': {
-                            '__factory__':
-                            dummy,
-                            'arg1': 'wobwob',
-                            'arg2': 9,
-                            },
-                        },
-                    'arg2': 6,
-                    },
-                },
-            'mylistofcomponents': [{
-                '__factory__': dummy,
-                'arg1': 'wobwob',
-                },
-                'somethingelse',
-                ],
-            'mynestedlistofcomponents': [[{
-                '__factory__': dummy,
-                'arg1': 'feep',
-                'arg2': {
-                    '__factory__': dummy,
-                    'arg1': 6,
-                },
-            }]],
-            'myconstant': 42,
-            }
-
-        config = _initialize_config(config)
-        assert config['myconstant'] == 42
-
-        mycomponent = config['mycomponent']
-        assert isinstance(mycomponent, MyDummyComponent)
-        assert mycomponent.arg1 == 3
-        assert mycomponent.arg2 == {'no': 'factory'}
-        assert mycomponent.initialize_component_arg is config
-
-        subcomponent = mycomponent.subcomponent
-        assert isinstance(subcomponent, MyDummyComponent)
-        assert subcomponent.arg2 == 6
-        assert subcomponent.initialize_component_arg is config
-
-        subsubcomponent = subcomponent.arg1['subsubcomponent']
-        assert isinstance(subsubcomponent, MyDummyComponent)
-        assert subsubcomponent.arg1 == 'wobwob'
-        assert subsubcomponent.arg2 == 9
-        assert subsubcomponent.initialize_component_arg is config
-
-        mylistofcomponents = config['mylistofcomponents']
-        assert len(mylistofcomponents) == 2
-        assert isinstance(mylistofcomponents[0], MyDummyComponent)
-        assert mylistofcomponents[0].arg1 == 'wobwob'
-        assert mylistofcomponents[1] == 'somethingelse'
-
-        mnl = config['mynestedlistofcomponents']
-        assert isinstance(mnl[0][0], MyDummyComponent)
-        assert mnl[0][0].arg1 == 'feep'
-        assert isinstance(mnl[0][0].arg2, MyDummyComponent)
-
-    def test_initialize_config_logging(self, _initialize_config):
-        with patch('palladium.util.dictConfig') as dictConfig:
-            _initialize_config({'logging': 'yes, please'})
-            dictConfig.assert_called_with('yes, please')
-
-
-class TestInitializeConfig:
-    @pytest.fixture
-    def initialize_config(self):
-        from palladium.util import initialize_config
-        return initialize_config
-
-    def test_initialize_config_extra(self, config,
-                                     initialize_config):
-        config.clear()
-        initialize_config(two='three')
-
-        assert config['two'] == 'three'
-
-    def test_initialize_config_already_initialized(self, config,
-                                                   initialize_config):
-        config.clear()
-        config.initialized = True
-        with pytest.raises(RuntimeError):
-            initialize_config(two='three')
-
-
-class TestGetConfig:
-    @pytest.fixture
-    def get_config(self):
-        from palladium.util import get_config
-        return get_config
-
-    def test_read(self, get_config, config):
-        config.initialized = False
-        config_in = {
-            'mycomponent': {
-                '__factory__': 'palladium.tests.test_util.MyDummyComponent',
-                'arg1': 3,
-                },
-            'myconstant': 42,
-            }
-
-        with patch('palladium.util.open',
-                   mock_open(read_data=str(config_in)),
-                   create=True):
-            with patch('palladium.util.os.environ', {'PALLADIUM_CONFIG': 'somepath'}):
-                config_new = get_config()
-
-            assert config_new['myconstant'] == config_in['myconstant']
-            mycomponent = config_new['mycomponent']
-            assert isinstance(mycomponent, MyDummyComponent)
-            assert mycomponent.arg1 == 3
-
-    def test_read_multiple_files(self, get_config, config):
-        config.initialized = False
-
-        fake_open = MagicMock()
-        fake_open.return_value.__enter__.return_value.read.side_effect = [
-            "{'a': 42, 'b': 6}", "{'b': 7}"
-            ]
-        with patch('palladium.util.open', fake_open, create=True):
-            with patch('palladium.util.os.environ', {
-                'PALLADIUM_CONFIG': 'somepath, andanother',
-                    }):
-                config_new = get_config()
-
-        assert config_new == {'a': 42, 'b': 7}
-
-        # Files later in the list override files earlier in the list:
-        assert fake_open.call_args_list == [
-            call('somepath'), call('andanother')]
-
-    def test_read_environ(self, get_config, config):
-        config.initialized = False
-        config_in_str = """
-{
-'mycomponent': {
-    '__factory__': 'palladium.tests.test_util.MyDummyComponent',
-    'arg1': 3,
-    'arg2': "{}:{}".format(environ['PALLADIUM_DB_IP'],
-                           environ['PALLADIUM_DB_PORT']),
-    },
-}"""
-
-        with patch('palladium.util.open',
-                   mock_open(read_data=config_in_str),
-                   create=True):
-            with patch('palladium.util.os.environ', {
-                    'PALLADIUM_CONFIG': 'somepath',
-                    'PALLADIUM_DB_IP': '192.168.0.1',
-                    'PALLADIUM_DB_PORT': '666',
-            }):
-                config_new = get_config()
-
-            mycomponent = config_new['mycomponent']
-            assert isinstance(mycomponent, MyDummyComponent)
-            assert mycomponent.arg1 == 3
-            assert mycomponent.arg2 == '192.168.0.1:666'
-
-    def test_read_here(self, get_config, config):
-        config.initialized = False
-        config_in_str = "{'here': here}"
-
-        with patch('palladium.util.open',
-                   mock_open(read_data=config_in_str),
-                   create=True):
-            with patch('palladium.util.os.environ', {
-                    'PALLADIUM_CONFIG': '/home/megha/somepath.py',
-            }):
-                config_new = get_config()
-
-            assert config_new['here'] == '/home/megha'
+    def test_module(self, resolve_dotted_name):
+        resolve_dotted_name('threading') is threading
 
 
 def test_args_from_config(config):
@@ -315,11 +97,11 @@ class TestProcessStore:
     def test_mtime_setitem(self, store):
         dt0 = datetime.now()
         store['somekey'] = '1'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt1 = datetime.now()
         assert dt0 < store.mtime['somekey'] < dt1
         store['somekey'] = '2'
-        sleep(0.001)  # make sure that we're not too fast
+        sleep(0.005)  # make sure that we're not too fast
         dt2 = datetime.now()
         assert dt1 < store.mtime['somekey'] < dt2
 
@@ -559,3 +341,75 @@ class TestPartial:
         Partial('palladium.tests.test_util:TestPartial.myfunc', two=2)(one='one')
         assert self.calls == [('one', 2, 'three')]
         self.__class__.calls = []
+
+
+class TestRunJob:
+    @pytest.fixture
+    def run_job(self):
+        from palladium.util import run_job
+        return run_job
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata']['jobs'] = {}
+        yield jobs
+        jobs.clear()
+
+    def test_simple(self, run_job, jobs):
+        def myfunc(add):
+            nonlocal result
+            result += add
+            return add
+
+        result = 0
+        results = []
+        for i in range(3):
+            results.append(run_job(myfunc, add=i))
+        sleep(0.005)
+        assert result == 3
+        assert len(jobs) == len(results) == 3
+        assert set(jobs.keys()) == set(r[1] for r in results)
+        assert all(j['status'] == 'finished' for j in jobs.values())
+        assert set(j['info'] for j in jobs.values()) == set(['0', '1', '2'])
+
+    def test_exception(self, run_job, jobs):
+        def myfunc(divisor):
+            nonlocal result
+            result /= divisor
+
+        result = 1
+        num_threads_before = len(threading.enumerate())
+        for i in range(3):
+            run_job(myfunc, divisor=i)
+        sleep(0.005)
+        num_threads_after = len(threading.enumerate())
+
+        assert num_threads_before == num_threads_after
+        assert result == 0.5
+        job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
+        assert job1['status'] == 'error'
+        assert 'division by zero' in job1['info']
+        assert job2['status'] == 'finished'
+        assert job3['status'] == 'finished'
+
+    def test_lifecycle(self, run_job, jobs):
+        def myfunc(tts):
+            sleep(tts)
+
+        num_threads_before = len(threading.enumerate())
+        for i in range(3):
+            run_job(myfunc, tts=i/100)
+
+        job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
+        assert job1['status'] == 'finished'
+        assert job2['status'] == job3['status'] == 'running'
+        assert len(threading.enumerate()) - num_threads_before == 2
+
+        sleep(0.015)
+        assert job2['status'] == 'finished'
+        assert job3['status'] == 'running'
+        assert len(threading.enumerate()) - num_threads_before == 1
+
+        sleep(0.015)
+        assert job3['status'] == 'finished'
+        assert len(threading.enumerate()) - num_threads_before == 0

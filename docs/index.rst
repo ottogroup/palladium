@@ -81,6 +81,7 @@ application.
   user/upgrading
   user/R
   user/julia
+  user/configuration
   user/faq
   user/related-projects
 

@@ -2,6 +2,7 @@
 """
 
 import sys
+
 from docopt import docopt
 from flask import Flask
 from flask import make_response
@@ -11,6 +12,8 @@ import ujson
 from werkzeug.exceptions import BadRequest
 
 from . import __version__
+from .fit import activate as activate_base
+from .fit import fit as fit_base
 from .interfaces import PredictError
 from .util import args_from_config
 from .util import get_config
@@ -20,6 +23,8 @@ from .util import logger
 from .util import memory_usage_psutil
 from .util import PluggableDecorator
 from .util import process_store
+from .util import run_job
+from .util import resolve_dotted_name
 
 app = Flask(__name__)
 
@@ -54,9 +59,15 @@ class PredictService:
         }
 
     def __init__(
-            self, mapping, params=(), entry_point='/predict',
-            decorator_list_name='predict_decorators',
-            predict_proba=False, **kwargs):
+        self,
+        mapping,
+        params=(),
+        entry_point='/predict',
+        decorator_list_name='predict_decorators',
+        predict_proba=False,
+        unwrap_sample=False,
+        **kwargs
+    ):
         """
         :param mapping:
           A list of query parameters and their type that should be
@@ -80,17 +91,24 @@ class PredictService:
           Instead of returning a single class (the default), when
           *predict_proba* is set to true, the result will instead
           contain a list of class probabilities.
+
+        :param unwrap_sample:
+          When working with text, scikit-learn and others will
+          sometimes expect the input to be a 1d array of strings
+          rather than a 2d array.  Setting *unwrap_sample* to true
+          will use this representation.
         """
         self.mapping = mapping
         self.params = params
         self.entry_point = entry_point
         self.decorator_list_name = decorator_list_name
         self.predict_proba = predict_proba
+        self.unwrap_sample = unwrap_sample
         vars(self).update(kwargs)
 
     def initialize_component(self, config):
         create_predict_function(
-            self.entry_point, self, self.decorator_list_name)
+            self.entry_point, self, self.decorator_list_name, config)
 
     def __call__(self, model, request):
         try:
@@ -127,7 +145,11 @@ class PredictService:
         for key, type_name in self.mapping:
             value_type = self.types[type_name]
             values.append(value_type(data[key]))
-        return np.array(values, dtype=object)
+        if self.unwrap_sample:
+            assert len(values) == 1
+            return np.array(values[0])
+        else:
+            return np.array(values, dtype=object)
 
     def params_from_data(self, model, data):
         """Retrieve additional parameters (keyword arguments) for
@@ -232,7 +254,7 @@ def alive(alive=None):
         obj = process_store.get(attr)
         if obj is not None:
             obj_info = {}
-            obj_info['updated'] = process_store.mtime['model'].isoformat()
+            obj_info['updated'] = process_store.mtime[attr].isoformat()
             if hasattr(obj, '__metadata__'):
                 obj_info['metadata'] = obj.__metadata__
             info[attr] = obj_info
@@ -240,11 +262,13 @@ def alive(alive=None):
             info[attr] = "N/A"
             status_code = 503
 
+    info['process_metadata'] = process_store['process_metadata']
+
     return make_ujson_response(info, status_code=status_code)
 
 
 def create_predict_function(
-        route, predict_service, decorator_list_name):
+        route, predict_service, decorator_list_name, config):
     """Creates a predict function and registers it to
     the Flask app using the route decorator.
 
@@ -262,7 +286,7 @@ def create_predict_function(
       A predict service function that will be used to process
       predict requests.
     """
-    model_persister = get_config().get('model_persister')
+    model_persister = config.get('model_persister')
 
     @app.route(route, methods=['GET', 'POST'], endpoint=route)
     @PluggableDecorator(decorator_list_name)
@@ -365,3 +389,60 @@ Options:
     initialize_config()
     stream = PredictStream()
     stream.listen(sys.stdin, sys.stdout, sys.stderr)
+
+
+@app.route('/list')
+@PluggableDecorator('list_decorators')
+@args_from_config
+def list(model_persister):
+    info = {
+        'models': model_persister.list_models(),
+        'properties': model_persister.list_properties(),
+        }
+    return make_ujson_response(info)
+
+
+@PluggableDecorator('server_fit_decorators')
+@args_from_config
+def fit():
+    param_converters = {
+        'persist': lambda x: x.lower() in ('1', 't', 'true'),
+        'activate': lambda x: x.lower() in ('1', 't', 'true'),
+        'evaluate': lambda x: x.lower() in ('1', 't', 'true'),
+        'persist_if_better_than': float,
+        }
+    params = {
+        name: typ(request.form[name])
+        for name, typ in param_converters.items()
+        if name in request.form
+        }
+    thread, job_id = run_job(fit_base, **params)
+    return make_ujson_response({'job_id': job_id}, status_code=200)
+
+
+@PluggableDecorator('update_model_cache_decorators')
+@args_from_config
+def update_model_cache(model_persister):
+    method = getattr(model_persister, 'update_cache', None)
+    if method is not None:
+        thread, job_id = run_job(model_persister.update_cache)
+        return make_ujson_response({'job_id': job_id}, status_code=200)
+    else:
+        return make_ujson_response({}, status_code=503)
+
+
+@PluggableDecorator('activate_decorators')
+def activate():
+    model_version = int(request.form['model_version'])
+    try:
+        activate_base(model_version=model_version)
+    except LookupError:
+        return make_ujson_response({}, status_code=503)
+    else:
+        return list()
+
+
+def add_url_rule(rule, endpoint=None, view_func=None, app=app, **options):
+    if isinstance(view_func, str):
+        view_func = resolve_dotted_name(view_func)
+    app.add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)

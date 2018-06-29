@@ -164,46 +164,51 @@ passed at runtime.
         'n_jobs': -1,
         }
 
-Is there any way to use a base configuration for different settings?
-====================================================================
 
-Since Palladium 1.0.1 you can use a list of configuration files in the
-``PALLADIUM_CONFIG`` environment variable. During initialization, the
-list will be processed successively and the configuration dict will be
-updated using the configuration files from left to right.
+Can I use my cluster to run a hyperparameter search?
+====================================================
 
-If we use a list of two configurations like
-``PALLADIUM_CONFIG=mypath/mybaseconfig.py,mypath/myconfig.py``, the
-entries in the configuration files later in the list will override the
-ones defined before. E.g., if the contents of
-``mypath/mybaseconfig.py`` is ``{'a': 42, 'b': 6}``" and the contents
-of ``mypath/myconfig.py`` is ``{'b': 7, 'c': 99}``, then the resulting
-configuration will be ``{'a': 42, 'b': 7, 'c': 99}``.
+Yes.  We support using `dask.distributed
+<http://distributed.readthedocs.io>`_ for distributing jobs among many
+computers.  To install the necessary packages, run ``pip install dask
+distributed``.
 
-
-Can I somehow track the location of the configuration file?
-===========================================================
-
-You can use the `here` variable in a configuration file in order to
-refer to the location, e.g.:
+Here's a piece of configuration that will use Dask workers to run the
+grid search:
 
 .. code-block:: python
 
-    {
-	...
-	'config_path': here,
-	...
-    }
+    'grid_search': {
+        '__factory__': 'palladium.fit.with_parallel_backend',
+        'estimator': {
+            '__factory__': 'sklearn.model_selection.GridSearchCV',
+            'estimator': {'__copy__': 'model'},
+            'param_grid': {
+                'C': [0.1, 0.3, 1.0],
+            },
+            'n_jobs': -1,
+        },
+        'backend': 'dask.distributed',
+        'scheduler_host': '127.0.0.1:8786',
+    },
 
-After initialization, this variable will point to the folder where the
-configuration file is located. In the example, eeading the value of
-`config_path` will give you a string of the path to the folder:
+    '_init_distributed': {
+        '__factory__': 'palladium.util.resolve_dotted_name',
+        'dotted_name': 'distributed.joblib.joblib',
+    },
 
-.. code-block:: python
+To start up the Dask scheduler and workers you can follow the
+dask.distributed documentation.  Here's an example that runs three
+workers locally:
 
-    from palladium.util import get_config
-    get_config()['config_path']  % -> config folder path
+.. code-block:: bash
 
+    $ dask-scheduler
+    Scheduler started at 127.0.0.1:8786
+
+    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786    
 
 How can I use test Palladium components in a shell?
 ===================================================

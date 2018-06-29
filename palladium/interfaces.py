@@ -121,7 +121,14 @@ class PredictError(Exception):
         return "{} ({})".format(self.error_message, self.error_code)
 
 
-class ModelPersister(metaclass=ABCMeta):
+class ModelPersisterMeta(ABCMeta):
+    def __init__(cls, name, bases, attrs, **kwargs):
+        super().__init__(name, bases, attrs, **kwargs)
+        cls.read = PluggableDecorator('read_model_decorators')(cls.read)
+        cls.write = PluggableDecorator('write_model_decorators')(cls.write)
+
+
+class ModelPersister(metaclass=ModelPersisterMeta):
     @abstractmethod
     def read(self, version=None):
         """Returns a :class:`Model` instance.

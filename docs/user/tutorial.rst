@@ -279,16 +279,42 @@ Try running ``pld-grid-search`` and see what happens:
 
 At the end, you should see something like this output::
 
-  [mean: 0.95000, std: 0.05138, params: {'C': 1.0},
-   mean: 0.91000, std: 0.05022, params: {'C': 0.3},
-   mean: 0.84000, std: 0.06408, params: {'C': 0.1}]
+     mean_fit_time  mean_score_time  mean_test_score  mean_train_score param_C  \
+  2       0.000811         0.000268             0.95          0.954831       1
+  1       0.001456         0.000426             0.91          0.924974     0.3
+  0       0.002270         0.001272             0.84          0.835621     0.1
 
-What happened?  We just tried out three different values for *C*,
-and used a three-fold cross-validation to determine the best setting.
-The first line is the winner.  It tells us that the mean
-cross-validation accuracy of the model with *C* set to ``1.0`` is
-``0.95`` and that the standard deviation between accuracies in the
-cross-validation folds is ``0.05138``.
+         params  rank_test_score  split0_test_score  split0_train_score  \
+  2  {'C': 1.0}                1           1.000000            0.938462
+  1  {'C': 0.3}                2           0.971429            0.923077
+  0  {'C': 0.1}                3           0.914286            0.876923
+
+     split1_test_score  split1_train_score  split2_test_score  \
+  2           0.878788            0.970149            0.96875
+  1           0.848485            0.925373            0.90625
+  0           0.757576            0.835821            0.84375
+
+     split2_train_score  std_fit_time  std_score_time  std_test_score  \
+  2            0.955882      0.000148        0.000048        0.051585
+  1            0.926471      0.000659        0.000089        0.050734
+  0            0.794118      0.000016        0.000751        0.064636
+
+     std_train_score
+  2         0.012958
+  1         0.001414
+  0         0.033805
+
+What happened?  We just tried out three different values for *C*, and
+used a three-fold cross-validation to determine the best setting.  The
+first line is the winner.  It tells us that the mean cross-validation
+accuracy of the model with *C* set to ``1.0`` (``params``) is ``0.95``
+(``mean_test_score``) and that the standard deviation between
+accuracies in the cross-validation folds is ``0.051585``.
+
+You can also ask to save these results by passing a CSV filename to
+the ``--save-results`` option.  If you want to persist the best model
+out of the grid search, run ``pld-grid-search`` with the
+``--persist-best`` flag.
 
 Let us take a look at the configuration of ``grid_search``:
 
@@ -377,6 +403,19 @@ model's version:
             },
         },
 
+If you prefer to use a REST backend like Artifactory for persisting your
+models, you can use the RestPersister:
+
+.. code-block:: python
+
+    'model_persister': {
+        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        'impl': {
+            '__factory__': 'palladium.persistence.Rest',
+            'url': 'http://localhost:8081/artifactory/modelz/{version}',
+            'auth': ('username', 'passw0rd'),
+            },
+        },
 
 
 Predict service

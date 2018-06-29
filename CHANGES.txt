@@ -1,3 +1,56 @@
+v1.2.0 - 2018-06-29
+===================
+
+- You can now run grid searches across a cluster of computers.  See
+  the FAQ entry "Can I use my cluster to run a hyperparameter search?"
+  for an example.
+
+- PredictService now has better support for text predictions (which
+  use 1d arrays of strings instead of 2d matrices as inputs) with the
+  `unwrap_sample` option.
+
+v1.2b1 - 2018-05-24
+===================
+
+- Update use of rpy2, no longer used deprecated pandas.rpy module.
+
+- Save `model.cv_results_` in model's metadata if it exists.
+
+- The best model of a grid search can now be persisted using the
+  `--persist-best` flag.
+
+- Grid search results can now be saved using the `--save-results`
+  option.
+
+- A `/activate` endpoint allows for activating a certain model version
+  through the web.
+
+- A `/refit` API endpoint that allows fitting a model to be triggered
+  through the web.
+
+- A new `/list` API endpoint that works similar to the pld-list CLI
+
+- A `scoring` variable in the configuration root, if defined, will be
+  used for both pld-test and pld-grid-search
+
+- In CachedUpdatePersister don't load model if we already have active
+
+- Allow for use of multiple CachedUpdatePersisters
+
+  Instances of CachedUpdatePersister now use their own name inside the
+  configuration file to index into `process_store`.  That is, a
+  CachedUpdatePersister that's configured as `my_model_persister`
+  inside the configuration file will have an entry in `process_store`
+  with the key `my_model_persister`.  This is a breaking change, since
+  the previously used key `model` is no longer available.
+
+- Added a model persister for REST backends, e.g. for use with
+  Artifactory.
+
+- Added a `__copy__` directive to copy and override existing entries
+  in configuration files. This can be used to avoid redundancy in one
+  or multiple configuration files.
+
 v1.1.0.1 - 2017-04-01
 =====================
 

@@ -3,8 +3,9 @@ import io
 import json
 import math
 from threading import Thread
+from time import sleep
+from unittest.mock import call
 from unittest.mock import Mock
-from unittest.mock import mock_open
 from unittest.mock import patch
 
 import dateutil.parser
@@ -170,6 +171,67 @@ class TestPredictService:
         assert sample[0] == 'myflower'
         assert sample[1] == 3
 
+    def test_unwrap_sample_get(self, PredictService, flask_app):
+        predict_service = PredictService(
+            mapping=[('text', 'str')],
+            unwrap_sample=True,
+            )
+        model = Mock()
+        model.predict.return_value = np.array([1])
+        with flask_app.test_request_context():
+            request = Mock(
+                args=dict([
+                    ('text', 'Hi this is text'),
+                    ]),
+                method='GET',
+                )
+            resp = predict_service(model, request)
+
+        assert model.predict.call_args[0][0].ndim == 1
+        model.predict.assert_called_with(np.array(['Hi this is text']))
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp.status_code == 200
+        assert resp_data == {
+            "metadata": {
+                "status": "OK",
+                "error_code": 0,
+                },
+            "result": 1,
+            }
+
+    def test_unwrap_sample_post(self, PredictService, flask_app):
+        predict_service = PredictService(
+            mapping=[('text', 'str')],
+            unwrap_sample=True,
+            )
+        model = Mock()
+        model.predict.return_value = np.array([1, 2])
+        with flask_app.test_request_context():
+            request = Mock(
+                json=[
+                    {'text': 'First piece of text'},
+                    {'text': 'Second piece of text'},
+                    ],
+                method='POST',
+                mimetype='application/json',
+                )
+            resp = predict_service(model, request)
+
+        assert model.predict.call_args[0][0].ndim == 1
+        assert (
+            model.predict.call_args[0] ==
+            np.array(['First piece of text', 'Second piece of text'])
+            ).all()
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp.status_code == 200
+        assert resp_data == {
+            "metadata": {
+                "status": "OK",
+                "error_code": 0,
+                },
+            "result": [1, 2],
+            }
+
     def test_probas(self, PredictService, flask_app):
         model = Mock()
         model.predict_proba.return_value = np.array([[0.1, 0.5, math.pi]])
@@ -252,22 +314,10 @@ class TestPredictService:
             'palladium.server.predict', mock_predict)
         yield mock_predict
 
-    def _initialize_config(self, flask_app_test):
-        # simulate real config (empty dict), otherwise
-        # _initialize_config will not be called
-        with patch('palladium.util.open',
-                   mock_open(read_data=str({})),
-                   create=True):
-            with patch(
-                    'palladium.util.os.environ',
-                    {'PALLADIUM_CONFIG': 'somepath'}
-            ):
-                with flask_app_test.test_request_context():
-                    from palladium.util import initialize_config
-                    initialize_config()
-
     def test_entry_point_not_set(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -277,8 +327,8 @@ class TestPredictService:
         }
         # set default predict_decorators
         config['predict_decorators'] = ['palladium.tests.test_server.dec']
-
-        self._initialize_config(flask_app_test)
+        with flask_app_test.test_request_context():
+            process_config(config)
 
         resp1 = flask_client.get(
             'predict?param=bla')
@@ -288,6 +338,8 @@ class TestPredictService:
 
     def test_entry_point_multiple(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -308,7 +360,8 @@ class TestPredictService:
         # only second predict service uses decorator list
         config['predict_decorators2'] = ['palladium.tests.test_server.dec']
 
-        self._initialize_config(flask_app_test)
+        with flask_app_test.test_request_context():
+            process_config(config)
 
         resp1 = flask_client.get(
             'predict1?param=bla')
@@ -324,6 +377,8 @@ class TestPredictService:
 
     def test_entry_point_multiple_conflict(
             self, config, flask_app_test, flask_client, mock_predict):
+        from palladium.config import process_config
+
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
             '__factory__': 'palladium.server.PredictService',
@@ -341,7 +396,8 @@ class TestPredictService:
         }
 
         with pytest.raises(AssertionError):
-            self._initialize_config(flask_app_test)
+            with flask_app_test.test_request_context():
+                process_config(config)
 
 
 class TestPredict:
@@ -357,7 +413,7 @@ class TestPredict:
         with flask_app_test.test_request_context():
             from palladium.server import create_predict_function
             create_predict_function(
-                '/predict', predict_service, 'predict_decorators')
+                '/predict', predict_service, 'predict_decorators', config)
             predict_service.return_value = make_ujson_response(
                 'a', status_code=200)
 
@@ -399,6 +455,7 @@ class TestAliveFunctional:
         assert sorted(resp_data.keys()) == ['memory_usage',
                                             'memory_usage_vms',
                                             'palladium_version',
+                                            'process_metadata',
                                             'service_metadata']
         assert resp_data['service_metadata'] == config['service_metadata']
 
@@ -565,3 +622,159 @@ class TestPredictStream:
         assert (model.predict.call_args[0][0] == np.array([[1.0, 1.0]])).all()
         assert model.predict.call_args[1]['turbo'] is True
         assert model.predict.call_args[1]['magic'] is False
+
+
+class TestList:
+    @pytest.fixture
+    def list(self):
+        from palladium.server import list
+        return list
+
+    def test_it(self, config, process_store, flask_client):
+        mp = config['model_persister'] = Mock()
+        mp.list_models.return_value = ['one', 'two']
+        mp.list_properties.return_value = {'hey': 'there'}
+        resp = flask_client.get('list')
+        assert resp.status_code == 200
+        resp_data = json.loads(resp.get_data(as_text=True))
+        assert resp_data == {
+            'models': ['one', 'two'],
+            'properties': {'hey': 'there'},
+            }
+
+
+class TestFitFunctional:
+    @pytest.fixture
+    def fit(self):
+        from palladium.server import fit
+        return fit
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_it(self, fit, config, jobs, flask_app):
+        dsl, model, model_persister = Mock(), Mock(), Mock()
+        del model.cv_results_
+        X, y = Mock(), Mock()
+        dsl.return_value = X, y
+        config['dataset_loader_train'] = dsl
+        config['model'] = model
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = fit()
+        sleep(0.005)
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == str(model)
+
+    @pytest.mark.parametrize('args, args_expected', [
+        (
+            {'persist': '1', 'activate': '0', 'evaluate': 't'},
+            {'persist': True, 'activate': False, 'evaluate': True},
+        ),
+        (
+            {'persist_if_better_than': '0.234'},
+            {'persist_if_better_than': 0.234},
+        ),
+    ])
+    def test_pass_args(self, fit, flask_app, args, args_expected):
+        with patch('palladium.server.fit_base') as fit_base:
+            fit_base.__name__ = 'mock'
+            with flask_app.test_request_context(method='POST', data=args):
+                fit()
+            sleep(0.005)
+        assert fit_base.call_args == call(**args_expected)
+
+
+class TestUpdateModelCacheFunctional:
+    @pytest.fixture
+    def update_model_cache(self):
+        from palladium.server import update_model_cache
+        return update_model_cache
+
+    @pytest.fixture
+    def jobs(self, process_store):
+        jobs = process_store['process_metadata'].setdefault('jobs', {})
+        yield jobs
+        jobs.clear()
+
+    def test_success(self, update_model_cache, config, jobs, flask_app):
+        model_persister = Mock()
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
+        sleep(0.005)
+        resp_json = json.loads(resp.get_data(as_text=True))
+        job = jobs[resp_json['job_id']]
+        assert job['status'] == 'finished'
+        assert job['info'] == repr(model_persister.update_cache())
+
+    def test_unavailable(self, update_model_cache, config, jobs, flask_app):
+        model_persister = Mock()
+        del model_persister.update_cache
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(method='POST'):
+            resp = update_model_cache()
+        assert resp.status_code == 503
+
+
+class TestActivateFunctional:
+    @pytest.fixture
+    def activate(self):
+        from palladium.server import activate
+        return activate
+
+    @pytest.fixture
+    def activate_base_mock(self, monkeypatch):
+        func = Mock()
+        monkeypatch.setattr('palladium.server.activate_base', func)
+        return func
+
+    def test_success(self, activate, activate_base_mock, config, flask_app):
+        model_persister = Mock(
+            list_models=lambda: {'be': 'first'},
+            list_properties=lambda: {'be': 'twice'},
+            )
+        config['model_persister'] = model_persister
+        with flask_app.test_request_context(
+            method='POST',
+            data={'model_version': 123},
+        ):
+            resp = activate()
+        assert resp.status_code == 200
+        assert resp.json == {
+            'models': {'be': 'first'},
+            'properties': {'be': 'twice'},
+            }
+
+    def test_lookuperror(self, activate, activate_base_mock, flask_app):
+        activate_base_mock.side_effect = LookupError
+        with flask_app.test_request_context(
+            method='POST',
+            data={'model_version': 123},
+        ):
+            resp = activate()
+        assert resp.status_code == 503
+
+
+def _test_add_url_rule_func():
+    return b'A OK'
+
+
+class TestAddUrlRule:
+    @pytest.fixture
+    def add_url_rule(self):
+        from palladium.server import add_url_rule
+        return add_url_rule
+
+    def test_it(self, add_url_rule, flask_client):
+        add_url_rule(
+            '/okay',
+            view_func='palladium.tests.test_server._test_add_url_rule_func',
+            )
+        resp = flask_client.get('/okay')
+        assert resp.data == b'A OK'
