@@ -51,6 +51,10 @@ v1.2b1 - 2018-05-24
   in configuration files. This can be used to avoid redundancy in one
   or multiple configuration files.
 
+v1.1.0.1 - 2017-04-01
+=====================
+
+- Added MANIFEST.in to include VERSION file to distribution
 
 v1.1.0 - 2017-03-27
 ===================

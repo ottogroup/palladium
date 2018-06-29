@@ -7,7 +7,7 @@
     :alt: Test coverage status
 
 .. image:: https://readthedocs.org/projects/palladium/badge/?version=latest
-    :target: https://readthedocs.org/projects/palladium/?badge=latest
+    :target: https://palladium.readthedocs.io/en/latest/
     :alt: Documentation status
 
 .. image:: https://img.shields.io/pypi/v/palladium.svg

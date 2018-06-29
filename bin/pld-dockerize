@@ -16,7 +16,7 @@ Docker container that I'll create.
 
 Example values:
   - PATH_TO_APP: .../examples/iris/
-  - BASE_IMAGE_NAME: ottogroup/palladium-base:0.9.1
+  - BASE_IMAGE_NAME: ottogroup/palladium-base:1.1.0.1
   - IMAGE_NAME: myname/my-palladium-app:1.0
 
 Options:
@@ -164,7 +164,7 @@ EXPOSE 8000
 
 EOM
 
-echo "CMD gunicorn --workers=3 -b" '$'"(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'):8000  palladium.server:app" >>$FILE-predict
+echo "CMD gunicorn --workers=3 -b 0.0.0.0:8000  palladium.wsgi:app" >>$FILE-predict
 
 # Build image
 if [ "$dry_run" -eq 0 ]; then

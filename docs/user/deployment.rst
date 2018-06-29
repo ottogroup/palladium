@@ -133,9 +133,9 @@ Run ``docker build`` in your terminal:
 
 .. code-block:: bash
 
-  sudo docker build -t myname/palladium-base:1.0.1 .
+  sudo docker build -t myname/palladium-base:1.1.0.1 .
 
-A Docker image with the name ``myname/palladium-base:1.0.1`` should now
+A Docker image with the name ``myname/palladium-base:1.1.0.1`` should now
 be created. You can check this with:
 
 .. code-block:: bash
@@ -161,7 +161,7 @@ we invoke ``pld-dockerize`` like so:
 
 .. code-block:: bash
 
-  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:1.0 myname/my-palladium-app:1.0
+  pld-dockerize palladium-src/examples/iris ottogroup/palladium-base:1.1.0.1 myname/my-palladium-app:1.0
 
 This command will in fact create two images: one that's called
 ``my-palladium-app``, another one that's called
