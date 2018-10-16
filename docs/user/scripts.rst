@@ -62,6 +62,11 @@ pld-admin: *administer available models*
 
 .. autosimple:: palladium.fit.admin_cmd
 
+pld-export: *export a model from one persister to another*
+==========================================================
+
+.. autosimple:: palladium.util.export_cmd
+
 pld-version: *display version number*
 =====================================
 
