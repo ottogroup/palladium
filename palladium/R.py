@@ -4,13 +4,16 @@
 from palladium.interfaces import DatasetLoader
 from palladium.interfaces import Model
 import numpy as np
+from pandas import Categorical
 from pandas import DataFrame
 from pandas import Series
 from rpy2 import robjects
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.pandas2ri import py2ri
 from rpy2.robjects.numpy2ri import numpy2ri
+from sklearn.base import TransformerMixin
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import r2_score
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -81,3 +84,44 @@ class ClassificationModel(AbstractModel):
 
     def score(self, X, y):
         return accuracy_score(self.predict(X), np.asarray(y))
+
+
+class RegressionModel(AbstractModel):
+    """A :class:`~palladium.interfaces.Model` for regression problems
+    that uses an R model for training and prediction.
+    """
+
+    def predict(self, X):
+        X = self._from_python(X)
+        return np.asarray(self.r['predict'](self.rmodel_, X))
+
+    def score(self, X, y):
+        return r2_score(self.predict(X), np.asarray(y))
+
+
+class Rpy2Transform(TransformerMixin):
+    def fit(self, X, y):
+        if isinstance(X, (np.ndarray, DataFrame)):
+            return self
+        self.index2levels_ = {}
+        for index in range(len(X.colnames)):
+            if hasattr(X[index], 'levels'):
+                self.index2levels_[index] = tuple(X[index].levels)
+        self.colnames_ = X.colnames
+        return self
+
+    def transform(self, X):
+        if isinstance(X, np.ndarray) and hasattr(self, 'index2levels_'):
+            X = DataFrame(X, columns=self.colnames_)
+        if isinstance(X, DataFrame) and hasattr(self, 'index2levels_'):
+            for index, levels in self.index2levels_.items():
+                colname = X.columns[index]
+                X[colname] = Categorical(
+                    X[colname],
+                    categories=levels,
+                    )
+            X = py2ri(X)
+            # Deal with an rpy2 issue whereas colnames appear to get
+            # mangled when calling py2ri:
+            X.colnames = self.colnames_
+        return X
