@@ -135,6 +135,19 @@ class TestSQL:
         [th.join() for th in threads]
 
 
+class TestOpenML:
+    @pytest.fixture
+    def OpenML(self):
+        from palladium.dataset import OpenML
+        return OpenML
+
+    @pytest.mark.slow
+    def test_wine_quality(self, OpenML):
+        X, y = OpenML('wine-quality-red')()
+        assert X.shape == (1599, 11)
+        assert y.shape == (1599,)
+
+
 def test_empty_dataset_loader():
     from palladium.dataset import EmptyDatasetLoader
     edl = EmptyDatasetLoader()
