@@ -14,6 +14,9 @@ config2path = {
     'config-iris.py': '/predict?'
     'sepal length=1.0&sepal width=1.1&petal length=0.777&petal width=5',
 
+    'config-iris.py,config-iris-dataset-from-python.py': '/predict?'
+    'sepal length=1.0&sepal width=1.1&petal length=0.777&petal width=5',
+
     'config-tooth.py': '/predict?'
     'supp=OJ&dose=0.5',
     }
@@ -23,6 +26,7 @@ config2path = {
 @pytest.mark.parametrize(
     'config_filename', [
         'config-iris.py',
+        'config-iris.py,config-iris-dataset-from-python.py',
         'config-tooth.py',
         ],
     )
