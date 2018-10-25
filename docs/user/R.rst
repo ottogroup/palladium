@@ -12,8 +12,9 @@ Palladium has support for using :class:`~palladium.interfaces.DatasetLoader` and
 :class:`~palladium.interfaces.Model` objects that are programmed in the R
 programming language.
 
-To use Palladium's R support, you'll have to install R and the Python `rpy2
-<https://pypi.python.org/pypi/rpy2>`_ package.
+To use Palladium's R support, you'll have to install R and the Python
+`rpy2 <https://pypi.python.org/pypi/rpy2>`_ package and `tzlocal
+<https://pypi.python.org/pypi/rpy2>`_.
 
 An example is available in the ``examples/R`` folder in the source
 tree of Palladium (:download:`config.py <../../examples/R/config.py>`,
