@@ -245,6 +245,47 @@ Options:
     upgrade(from_version=arguments['--from'], to_version=arguments['--to'])
 
 
+@args_from_config
+def export(
+    model_persister,
+    model_persister_export,
+    model_version=None,
+    activate=True,
+):
+    model = model_persister.read(model_version)
+    model_version_export = model_persister_export.write(model)
+    if activate:
+        model_persister_export.activate(model_version_export)
+    return model_version_export
+
+
+def export_cmd(argv=sys.argv[1:]):  # pragma: no cover
+    """\
+Export a model from one model persister to another.
+
+The model persister to export to is supposed to be available in the
+configuration file under the 'model_persister_export' key.
+
+Usage:
+  pld-export [options]
+
+Options:
+  --version=<v>            Export a specific version rather than the active
+                           one.
+
+  --no-activate            Don't activate the exported model with the
+                           'model_persister_export'.
+
+  -h --help                Show this screen.
+"""
+    arguments = docopt(export_cmd.__doc__, argv=argv)
+    model_version = export(
+        model_version=arguments['--version'],
+        activate=not arguments['--no-activate'],
+        )
+    logger.info("Exported model. New version number: {}".format(model_version))
+
+
 class PluggableDecorator:
     def __init__(self, decorator_config_name):
         self.decorator_config_name = decorator_config_name

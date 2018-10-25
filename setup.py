@@ -73,6 +73,7 @@ setup(name='palladium',
               'pld-test = palladium.eval:test_cmd',
               'pld-upgrade = palladium.util:upgrade_cmd',
               'pld-version = palladium.util:version_cmd',
+              'pld-export = palladium.util:export_cmd',
               ],
           'pytest11': [
               'palladium = palladium.tests',
