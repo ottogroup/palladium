@@ -441,12 +441,12 @@ class TestWithParallelBackend:
 
     @pytest.mark.parametrize('backend', ['threading', 'sequential'])
     def test_it(self, with_parallel_backend, estimator, backend):
-        X, y = np.random.random((10, 10)), np.random.randint(0, 2, 10)
+        X, y = np.random.random((100, 10)), np.random.randint(0, 2, 100)
         with_parallel_backend(estimator, backend).fit(X, y)
         with_parallel_backend(estimator, backend).predict(X)
 
     def test_bad(self, with_parallel_backend, estimator):
-        X, y = np.random.random((10, 10)), np.random.randint(0, 2, 10)
+        X, y = np.random.random((100, 10)), np.random.randint(0, 2, 100)
         with pytest.raises(KeyError):
             with_parallel_backend(estimator, 'foo').fit(X, y)
 
