@@ -101,17 +101,25 @@ class RegressionModel(AbstractModel):
 
 class Rpy2Transform(TransformerMixin):
     def fit(self, X, y):
-        if isinstance(X, (np.ndarray, DataFrame)):
-            return self
-        self.index2levels_ = {}
-        for index in range(len(X.colnames)):
-            if hasattr(X[index], 'levels'):
-                self.index2levels_[index] = tuple(X[index].levels)
-        self.colnames_ = X.colnames
+        if isinstance(X, np.ndarray):
+            pass
+        elif isinstance(X, DataFrame):
+            self.index2levels_ = {}
+            for index, column in enumerate(X.columns):
+                if hasattr(X[column].dtype, 'categories'):
+                    self.index2levels_[index] = tuple(
+                        X[column].dtype.categories)
+            self.colnames_ = list(X.columns)
+        else:
+            self.index2levels_ = {}
+            for index in range(len(X.colnames)):
+                if hasattr(X[index], 'levels'):
+                    self.index2levels_[index] = tuple(X[index].levels)
+            self.colnames_ = X.colnames
         return self
 
     def transform(self, X):
-        if isinstance(X, np.ndarray) and hasattr(self, 'index2levels_'):
+        if isinstance(X, (np.ndarray, list)) and hasattr(self, 'index2levels_'):
             X = DataFrame(X, columns=self.colnames_)
         if isinstance(X, DataFrame) and hasattr(self, 'index2levels_'):
             for index, levels in self.index2levels_.items():
@@ -121,7 +129,9 @@ class Rpy2Transform(TransformerMixin):
                     categories=levels,
                     )
             X = py2ri(X)
+        if hasattr(self, 'colnames_'):
             # Deal with an rpy2 issue whereas colnames appear to get
-            # mangled when calling py2ri:
+            # mangled when calling py2ri.  Also, apply colnames if
+            # predict data was missing them:
             X.colnames = self.colnames_
         return X
