@@ -10,8 +10,8 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda config --set always_yes yes --set changeps1 no
-  - conda install --yes -c r rpy2 r-randomforest tzlocal
-  - conda install python=$TRAVIS_PYTHON_VERSION --file requirements.txt
+  - conda install -q --yes -c r rpy2 r-randomforest tzlocal
+  - conda install -q python=$TRAVIS_PYTHON_VERSION --file requirements.txt
   - conda update -q conda
   - pip install coveralls
   - travis_retry python setup.py dev
