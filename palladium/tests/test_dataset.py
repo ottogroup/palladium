@@ -6,6 +6,7 @@ from unittest.mock import patch
 import numpy as np
 from pandas import DataFrame
 import pytest
+import sklearn
 
 dummy_dataframe = DataFrame({
     'datacol1': [10, 11, 12, 13, 14],
@@ -135,6 +136,8 @@ class TestSQL:
         [th.join() for th in threads]
 
 
+@pytest.mark.skipif(sklearn.__version__ < "0.20.1",
+                    reason="scikit-learn version too old")
 class TestOpenML:
     @pytest.fixture
     def OpenML(self):

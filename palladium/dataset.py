@@ -108,7 +108,7 @@ class SQL(DatasetLoader):
             return data, target
 
 
-class OpenML(DatasetLoader):
+class OpenML(DatasetLoader):  # pragma: no cover
     """A :class:`~palladium.interfaces.DatasetLoader` that uses
     scikit-learn's :func:`sklearn.datasets.fetch_openml` to load data
     from OpenML.
