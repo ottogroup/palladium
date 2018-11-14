@@ -6,12 +6,15 @@ from unittest.mock import Mock
 import numpy
 from pandas import DataFrame
 from pandas import Series
+from sklearn.pipeline import Pipeline
 
 import pytest
 
 
 pytest.importorskip("rpy2")
+from rpy2.robjects.pandas2ri import py2ri
 from rpy2.robjects.pandas2ri import ri2py
+from rpy2.robjects.vectors import Vector
 
 
 @pytest.fixture
@@ -176,3 +179,77 @@ class TestClassificationWithPandasDataset(TestClassification):
             ] * 50)
         y = Series([1, 2, 3] * 50)
         return lambda: (X, y)
+
+
+class TestRegression:
+    @pytest.fixture
+    def scriptname(self):
+        return os.path.join(os.path.dirname(__file__), 'test_R2.R')
+
+    @pytest.fixture
+    def dataset(self, scriptname):
+        from palladium.R import DatasetLoader
+        return DatasetLoader(
+            scriptname=scriptname,
+            funcname='dataset',
+            )
+
+    @pytest.fixture
+    def model(self, scriptname):
+        from palladium.R import RegressionModel
+        from palladium.R import Rpy2Transform
+
+        return Pipeline([
+            ('rpy2', Rpy2Transform()),
+            ('regressor', RegressionModel(
+                scriptname=scriptname,
+                funcname='train.randomForest',
+                )),
+            ])
+
+    def test_smoke(self, dataset, model):
+        X, y = dataset()
+        model.fit(X, y)
+
+        assert model.predict(X).shape == (
+            ri2py(y).shape if isinstance(y, Vector) else y.shape)
+        score_1 = model.score(X, y)
+        assert score_1 >= 0.1
+
+        # Convert X to its Python or R equivalent and check if scores
+        # match:
+        X_t = py2ri(X) if isinstance(X, DataFrame) else ri2py(X)
+        score_2 = model.score(X_t, y)
+        assert score_2 == score_1
+
+        # Convert X to a Python list and run the prediction:
+        X_t2 = ri2py(X) if not isinstance(X, DataFrame) else X
+        X_t2 = X_t2.values.tolist()
+        score_3 = model.score(X_t2, y)
+        assert score_3 == score_1
+
+
+class TestRegressionWithPandasDataset(TestRegression):
+    @pytest.fixture
+    def dataset(self):
+        X = DataFrame(
+            [
+                [1.0, 2.0, 0],
+                [4.0, 5.0, 1],
+                [7.0, 8.0, 2],
+            ] * 50,
+            columns=('one', 'two', 'really'),
+            )
+        X['really'] = X['really'].astype('category')
+        y = Series([1.0, 2.0, 3.0] * 50)
+        return lambda: (X, y)
+
+    def test_fit_and_predict(self, dataset, model):
+        X, y = dataset()
+        model.fit(X, y)
+        assert (model.predict(X) == numpy.asarray(y)).all()
+
+    def test_fit_and_score(self, dataset, model):
+        X, y = dataset()
+        model.fit(X, y)
+        assert model.score(X, y) == 1.0
