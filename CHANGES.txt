@@ -1,3 +1,16 @@
+v1.2.1 - 2018-12-12
+===================
+
+- Added pld-export command to export a model from one model persister
+  to another.
+
+- Added a DatasetLoader for loading data from OpenML via scikit-learn.
+
+- Added another R example that solves a regression problem and makes
+  use of factor variables or categorical variables.
+
+- Added Python 3.7 to Travis CI test settings, removed Python 3.5.
+
 v1.2.0 - 2018-06-29
 ===================
 
