@@ -435,8 +435,9 @@ class TestWithParallelBackend:
         from sklearn.linear_model import LogisticRegression
 
         return GridSearchCV(
-            LogisticRegression(),
+            LogisticRegression(solver='liblinear'),
             param_grid={'C': [0.001, 0.01]},
+            cv=3,
             )
 
     @pytest.mark.parametrize('backend', ['threading', 'sequential'])
