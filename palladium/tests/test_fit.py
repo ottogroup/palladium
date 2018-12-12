@@ -209,7 +209,7 @@ class TestFit:
             persist=False,
             )
         assert result is model
-        model_persister.activate.call_count == 0
+        assert model_persister.activate.call_count == 0
 
     def test_timestamp(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
