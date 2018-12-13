@@ -1,5 +1,5 @@
-v1.2.1 - 2018-12-12
-===================
+v1.2.1.1 - 2018-12-13
+=====================
 
 - Added pld-export command to export a model from one model persister
   to another.
