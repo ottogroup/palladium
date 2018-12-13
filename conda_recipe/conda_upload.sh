@@ -14,7 +14,7 @@ mkdir ~/conda-bld
 conda install conda-build
 conda install anaconda-client
 
-conda config --add channels bioconda  # for requests-mock
+conda config --add channels conda-forge  # for requests-mock
 conda config --set anaconda_upload no
 export CONDA_BLD_PATH=~/conda-bld
 conda build .
