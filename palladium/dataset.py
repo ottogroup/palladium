@@ -3,6 +3,7 @@
 
 import pandas.io.parsers
 import pandas.io.sql
+from sklearn.datasets import fetch_openml
 from sqlalchemy import create_engine
 
 from .interfaces import DatasetLoader
@@ -105,6 +106,24 @@ class SQL(DatasetLoader):
             return data.values, target.values if target is not None else None
         else:
             return data, target
+
+
+class OpenML(DatasetLoader):  # pragma: no cover
+    """A :class:`~palladium.interfaces.DatasetLoader` that uses
+    scikit-learn's :func:`sklearn.datasets.fetch_openml` to load data
+    from OpenML.
+    """
+    def __init__(self, name):
+        """
+        :param str name:
+          The dataset name from OpenML.
+          Examples: "wine-quality-red", "diabetes"
+        """
+        self.name = name
+
+    def __call__(self):
+        dataset = fetch_openml(self.name)
+        return dataset.data, dataset.target
 
 
 class EmptyDatasetLoader(DatasetLoader):

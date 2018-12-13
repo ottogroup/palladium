@@ -6,6 +6,7 @@ from unittest.mock import patch
 import numpy as np
 from pandas import DataFrame
 import pytest
+import sklearn
 
 dummy_dataframe = DataFrame({
     'datacol1': [10, 11, 12, 13, 14],
@@ -133,6 +134,21 @@ class TestSQL:
         threads = [Thread(target=sql) for i in range(5)]
         [th.start() for th in threads]
         [th.join() for th in threads]
+
+
+@pytest.mark.skipif(sklearn.__version__ < "0.20.1",
+                    reason="scikit-learn version too old")
+class TestOpenML:
+    @pytest.fixture
+    def OpenML(self):
+        from palladium.dataset import OpenML
+        return OpenML
+
+    @pytest.mark.slow
+    def test_wine_quality(self, OpenML):
+        X, y = OpenML('wine-quality-red')()
+        assert X.shape == (1599, 11)
+        assert y.shape == (1599,)
 
 
 def test_empty_dataset_loader():

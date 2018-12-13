@@ -11,3 +11,5 @@ lib/
 __pycache__/
 _build/
 pip-selfcheck.json
+.idea/
+*.iml

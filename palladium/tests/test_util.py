@@ -202,6 +202,31 @@ class TestUpgrade:
                                              to_version='0.2')
 
 
+class TestExport:
+    @pytest.fixture
+    def export(self):
+        from palladium.util import export
+        return export
+
+    def test_no_args(self, export):
+        persister = Mock()
+        persister_export = Mock()
+        export(persister, persister_export)
+        persister.read.assert_called_with(None)
+        persister_export.write.assert_called_with(persister.read())
+        persister_export.activate.assert_called_with(persister_export.write())
+
+    def test_model_version(self, export):
+        persister = Mock()
+        export(persister, Mock(), model_version=123)
+        persister.read.assert_called_with(123)
+
+    def test_activate(self, export):
+        persister_export = Mock()
+        export(Mock(), persister_export, activate=False)
+        assert persister_export.activate.call_count == 0
+
+
 def dec1(func):
     def inner(a, b):
         """dec1"""
