@@ -209,7 +209,7 @@ class TestFit:
             persist=False,
             )
         assert result is model
-        model_persister.activate.call_count == 0
+        assert model_persister.activate.call_count == 0
 
     def test_timestamp(self, fit, dataset_loader):
         model, model_persister = Mock(), Mock()
@@ -435,8 +435,9 @@ class TestWithParallelBackend:
         from sklearn.linear_model import LogisticRegression
 
         return GridSearchCV(
-            LogisticRegression(),
+            LogisticRegression(solver='liblinear'),
             param_grid={'C': [0.001, 0.01]},
+            cv=3,
             )
 
     @pytest.mark.parametrize('backend', ['threading', 'sequential'])
