@@ -12,6 +12,11 @@ PALLADIUM_CONFIG_ERROR = """
   refer to the manual for more details.
 """
 
+DEFAULT_CONFIG_FILE_LOCATIONS = (
+    'palladium-config.py',
+    os.path.join('etc', 'palladium-config.py'),
+    )
+
 
 class Config(dict):
     """A dictionary that represents the app's configuration.
@@ -212,7 +217,15 @@ def _get_config(**extra):
     if not _config.initialized:
         _config.update(extra)
         _config.initialized = True
+
         fnames = os.environ.get('PALLADIUM_CONFIG')
+        if fnames is None:
+            for fname in DEFAULT_CONFIG_FILE_LOCATIONS:
+                if os.path.exists(fname):  # pragma: no cover
+                    fnames = fname
+                    print("Using configuration at {}".format(fname))
+                    break
+
         if fnames is not None:
             configs = []
             fnames = [fname.strip() for fname in fnames.split(',')]
