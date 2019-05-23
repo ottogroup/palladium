@@ -1,6 +1,7 @@
 """Utilities for fitting modles.
 """
 
+import gc
 from warnings import warn
 import sys
 
@@ -74,9 +75,13 @@ def fit(dataset_loader_train, model, model_persister, persist=True,
             annotate(model, {'score_train': score_train})
             logger.info("Train score: {}".format(score_train))
 
+    X, y = None, None
+    gc.collect()
+
     score_test = None
     if evaluate and dataset_loader_test is not None:
-        X_test, y_test = dataset_loader_test()
+        with timer(logger.info, "Loading test data"):
+            X_test, y_test = dataset_loader_test()
         with timer(logger.debug, "Evaluating model on test set"):
             score_test = scorer(model, X_test, y_test)
             annotate(model, {'score_test': score_test})
