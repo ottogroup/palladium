@@ -10,7 +10,8 @@ matrix:
 env:
   - TRAVIS=yes
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86_64.sh -O miniconda.sh
+  - pip install -U pip && pip --version
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
@@ -19,7 +20,10 @@ before_install:
   - conda install -q python=$TRAVIS_PYTHON_VERSION --file requirements.txt
   - conda update -q conda
   - pip install coveralls
-  - travis_retry python setup.py dev
+install:
+  - pip install -r requirements.txt
+  - pip install -e .
+  - python setup.py dev
 script:
   - travis_wait py.test --runslow
 deploy:
