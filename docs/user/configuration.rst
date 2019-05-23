@@ -15,7 +15,12 @@ Configuration files use Python syntax.  For an introduction, please
 visit the :ref:`tutorial`.
 
 Palladium uses an environment variable called ``PALLADIUM_CONFIG`` to
-look up the location of the configuration file.
+look up the location of one or more configuration files.  If
+``PALLADIUM_CONFIG`` is not set, Palladium will try to find a
+configuration file at these locations:
+
+- ``palladium-config.py``
+- ``etc/palladium-config.py``
 
 Variables
 =========

@@ -76,7 +76,7 @@ class TestFile:
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
             lp.return_value = {'active-model': '99'}
-            exists.return_value = True
+            exists.side_effect = lambda fn: fn == '/models/model-99.pkl.gz'
             open.return_value = MagicMock()
             result = File('/models/model-{version}').read()
             open.assert_called_with('/models/model-99.pkl.gz', 'rb')
@@ -90,7 +90,7 @@ class TestFile:
             patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
-            exists.return_value = True
+            exists.side_effect = lambda fn: fn == '/models/model-432.pkl.gz'
             open.return_value = MagicMock()
             result = File('/models/model-{version}').read(432)
             open.assert_called_with('/models/model-432.pkl.gz', 'rb')
