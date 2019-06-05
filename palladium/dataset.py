@@ -13,12 +13,12 @@ from .util import process_store
 from .util import RruleThread
 
 
-class Table(DatasetLoader):
+class CSV(DatasetLoader):
     """A :class:`~palladium.interfaces.DatasetLoader` that uses
-    :func:`pandas.io.parsers.read_table` to load data from a file or
+    :func:`pandas.io.parsers.read_csv` to load data from a file or
     URL.
     """
-    pandas_read = staticmethod(pandas.io.parsers.read_table)
+    pandas_read = staticmethod(pandas.io.parsers.read_csv)
 
     def __init__(self, path, target_column=None,
                  ndarray=True, **kwargs):
@@ -61,6 +61,14 @@ class Table(DatasetLoader):
             return data.values, target.values if target is not None else None
         else:
             return data, target
+
+
+class Table(CSV):
+    """A :class:`~palladium.interfaces.DatasetLoader` that uses the
+    deprecated :func:`pandas.io.parsers.read_table` to load data from
+    a file or URL.
+    """
+    pandas_read = staticmethod(pandas.io.parsers.read_table)
 
 
 class SQL(DatasetLoader):

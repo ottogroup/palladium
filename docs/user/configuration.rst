@@ -46,7 +46,7 @@ folder as the configuration:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/data.csv'.format(here),
         }
 
@@ -80,7 +80,7 @@ file:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -88,7 +88,7 @@ file:
         }
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/test.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -100,7 +100,7 @@ With ``__copy__``, you can reduce this down to:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},
