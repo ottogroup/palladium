@@ -43,6 +43,7 @@
         'param_grid': {
             'C': [0.1, 0.3, 1.0],
         },
+        'return_train_score': True,
         'verbose': 4,
         'n_jobs': -1,
     },

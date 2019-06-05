@@ -324,6 +324,7 @@ Let us take a look at the configuration of ``grid_search``:
         'param_grid': {
             'C': [0.1, 0.3, 1.0],
             },
+        'return_train_score': True,
         'verbose': 4,
         }
 
@@ -331,9 +332,12 @@ What parameters should be checked can be specified in the entry
 ``param_grid``. If more than one parameter with sets of values to
 check are provided, all possible combinations are explored by grid
 search. ``verbose`` allows to set the level for grid search
-messages. It is possible to set other parameters of grid search, e.g.,
-how many jobs to be run in parallel can be specified in `n_jobs` (if
-set to -1, all cores are used).
+messages. With ``return_train_score`` set to ``True``, the result will
+also include scores for the training data for each fold.
+
+It is possible to set other parameters of grid search, e.g., how many
+jobs to be run in parallel can be specified in `n_jobs` (if set to -1,
+all cores are used).
 
 Palladium uses :class:`sklearn.grid_search.GridSearchCV` to do the actual
 work.  Thus, you'll want to take a look at the `scikit-learn docs for
