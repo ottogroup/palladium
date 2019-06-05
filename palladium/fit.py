@@ -7,8 +7,8 @@ import sys
 
 from datetime import datetime
 from docopt import docopt
+from joblib import parallel_backend
 import pandas
-from sklearn.externals.joblib import parallel_backend
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import GridSearchCV
 
