@@ -1,6 +1,6 @@
 {
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -10,13 +10,12 @@
             'species',
         ],
         'target_column': 'species',
-        'sep': ',',
         'nrows': 100,
         'converters': {'species': lambda x: 1 if x == 'Iris-setosa' else -1},
     },
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -26,7 +25,6 @@
             'species',
         ],
         'target_column': 'species',
-        'sep': ',',
         'skiprows': 100,
         'converters': {'species': lambda x: 1 if x == 'Iris-setosa' else -1},
     },

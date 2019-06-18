@@ -7,8 +7,8 @@ import sys
 
 from datetime import datetime
 from docopt import docopt
+from joblib import parallel_backend
 import pandas
-from sklearn.externals.joblib import parallel_backend
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import GridSearchCV
 
@@ -216,12 +216,12 @@ def grid_search(dataset_loader_train, model, grid_search, scoring=None,
             search_kwargs['cv'] = apply_kwargs(cv, n=len(y), X=X, y=y)
 
         if 'scoring' in search_kwargs:
-            warn("Use of 'scoring' inside of 'grid_search' is deprecated. "
-                 "To fix, move 'scoring' up to the top level of the configuration "
-                 "dict.", DeprecationWarning)
             if scoring is not None:
                 raise ValueError("You cannot define 'scoring' in 'grid_search' "
                                  "and globally.")
+            warn("Use of 'scoring' inside of 'grid_search' is deprecated. "
+                 "To fix, move 'scoring' up to the top level of the configuration "
+                 "dict.", DeprecationWarning)
             scoring = search_kwargs['scoring']
         elif scoring is not None:
             search_kwargs['scoring'] = scoring

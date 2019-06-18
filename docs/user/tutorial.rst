@@ -144,22 +144,22 @@ our dataset loader that helps us load the training data from the CSV
 file with the data, and define which rows should be used as data and
 target values.  The first entry inside ``dataset_loader_train``
 defines the type of dataset loader we want to use.  That is
-:class:`palladium.dataset.Table`:
+:class:`palladium.dataset.CSV`:
 
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
 
-The rest what is inside the ``dataset_loader_train`` are the keyword
-arguments that are used to initialize the :class:`~palladium.dataset.Table`
-component.  The full definition of ``dataset_loader_train`` looks like
-this:
+The rest of what is inside the ``dataset_loader_train`` are the
+keyword arguments that are used to initialize the
+:class:`~palladium.dataset.CSV` class.  The full definition of
+``dataset_loader_train`` looks like this:
 
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -169,20 +169,20 @@ this:
             'species',
             ],
         'target_column': 'species',
-        'sep': ',',
         'nrows': 100,
         }
 
-You can now take a look at :class:`~palladium.dataset.Table`'s API to find
-out what parameters a Table accepts and what they mean.  But to
-summarize: the ``path`` is the path to the CSV file.  In our case,
-this is the relative path to ``iris.data``.  Because our CSV file
-doesn't have the column names in the first line, we have to provide
-the column names using the ``names`` parameter.  The ``target_column``
-defines which of the columns should be used as the value to be
-predicted; this is the last column, which we named ``species``.  The
-``nrows`` parameter tells :class:`~palladium.dataset.Table` to return only
-the first hundred samples from our CSV file.
+You can take a look at :class:`~palladium.dataset.CSV`'s API to find
+out what parameters the CSV dataset loader accepts and what they mean.
+But to summarize: the ``path`` is the path to the CSV file.  In our
+case, this is the relative path to ``iris.data``.  Because our CSV
+file doesn't have the column names in the first line, we have to
+provide the column names using the ``names`` parameter.  The
+``target_column`` defines which of the columns should be used as the
+value to be predicted; this is the last column, which we named
+``species``.  The ``nrows`` parameter tells
+:class:`~palladium.dataset.CSV` to return only the first hundred
+samples from our CSV file.
 
 If you take a look at the next section in the config file, which is
 ``dataset_loader_test``, you will notice that it is very similar to
@@ -197,21 +197,28 @@ the ``skiprows`` parameter and thus skips the first hundred examples
 
         'skiprows': 100,
 
-Under the hood, :class:`~palladium.dataset.Table` uses
-:func:`pandas.io.parsers.read_table` to do the actual loading.  Any
-additional named parameters passed to :class:`~palladium.dataset.Table` are
-passed on to :func:`~pandas.io.parsers.read_table`.  That is the case
-for the ``sep`` parameter in our example, but there are a lot of other
-useful options, too, like ``usecols``, ``skiprows`` and so on.
+.. note::
+
+  At this point you may be wondering if there's a way to not repeat
+  the entire ``dataset_loader_train`` section to define the test
+  dataset loader, just to change the ``skiprows`` argument, there is!
+  Check out the `configuration`_ docs for details on how to use the
+  ``__copy__`` special keyword.
+
+Under the hood, :class:`~palladium.dataset.CSV` uses
+:func:`pandas.io.parsers.read_csv` to do the actual loading.  Any
+additional named parameters passed to :class:`~palladium.dataset.CSV`
+are passed on to :func:`~pandas.io.parsers.read_csv`.  In our example,
+that is the case for the ``nrows`` and ``skiprows`` parameters.
 
 Palladium also includes a dataset loader for loading data from an SQL
 database: :class:`palladium.dataset.SQL`.
 
 But if you find yourself in need to write your own dataset loader,
 then that is pretty easy to do: Take a look at Palladium's
-:class:`~palladium.interfaces.DatasetLoader` interface that documents how a
-:class:`~palladium.interfaces.DatasetLoader` like
-:class:`~palladium.dataset.Table` needs to look like.
+:class:`~palladium.interfaces.DatasetLoader` interface that documents
+how a :class:`~palladium.interfaces.DatasetLoader` like
+:class:`~palladium.dataset.CSV` needs to look like.
 
 
 Model
@@ -324,6 +331,7 @@ Let us take a look at the configuration of ``grid_search``:
         'param_grid': {
             'C': [0.1, 0.3, 1.0],
             },
+        'return_train_score': True,
         'verbose': 4,
         }
 
@@ -331,9 +339,12 @@ What parameters should be checked can be specified in the entry
 ``param_grid``. If more than one parameter with sets of values to
 check are provided, all possible combinations are explored by grid
 search. ``verbose`` allows to set the level for grid search
-messages. It is possible to set other parameters of grid search, e.g.,
-how many jobs to be run in parallel can be specified in `n_jobs` (if
-set to -1, all cores are used).
+messages. With ``return_train_score`` set to ``True``, the result will
+also include scores for the training data for each fold.
+
+It is possible to set other parameters of grid search, e.g., how many
+jobs to be run in parallel can be specified in `n_jobs` (if set to -1,
+all cores are used).
 
 Palladium uses :class:`sklearn.grid_search.GridSearchCV` to do the actual
 work.  Thus, you'll want to take a look at the `scikit-learn docs for

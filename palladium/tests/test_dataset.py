@@ -3,7 +3,6 @@ from threading import Thread
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import numpy as np
 from pandas import DataFrame
 import pytest
 import sklearn
@@ -15,54 +14,54 @@ dummy_dataframe = DataFrame({
     })
 
 
-class TestTable:
+class TestCSV:
     @pytest.fixture
-    def Table(self):
-        from palladium.dataset import Table
-        return Table
+    def CSV(self):
+        from palladium.dataset import CSV
+        return CSV
 
-    def test_it(self, Table):
-        with patch("palladium.dataset.Table.pandas_read") as read_table:
-            read_table.return_value = dummy_dataframe[3:5]  # simulate skiprows
-            dataset = Table('mypath', 'targetcol', some='keyword', skiprows=3)
+    def test_it(self, CSV):
+        with patch("palladium.dataset.CSV.pandas_read") as read_csv:
+            read_csv.return_value = dummy_dataframe[3:5]  # simulate skiprows
+            dataset = CSV('mypath', 'targetcol', some='keyword', skiprows=3)
             data, target = dataset()
 
-        read_table.assert_called_with('mypath', some='keyword', skiprows=3)
+        read_csv.assert_called_with('mypath', some='keyword', skiprows=3)
         assert len(data) == len(target) == 2
         assert data.tolist() == [[13, 23.0], [14, 24.0]]
         assert target.tolist() == [3, 4]
 
-    def test_ndarray_false(self, Table):
-        with patch("palladium.dataset.Table.pandas_read") as read_table:
-            read_table.return_value = dummy_dataframe[3:5]
-            dataset = Table('mypath', 'targetcol', some='keyword',
-                            skiprows=3, ndarray=False)  # simulate skiprows
+    def test_ndarray_false(self, CSV):
+        with patch("palladium.dataset.CSV.pandas_read") as read_csv:
+            read_csv.return_value = dummy_dataframe[3:5]
+            dataset = CSV('mypath', 'targetcol', some='keyword',
+                          skiprows=3, ndarray=False)  # simulate skiprows
             data, target = dataset()
 
         assert data['datacol1'].tolist() == [13, 14]
         assert data['datacol2'].tolist() == [23.0, 24.0]
         assert target.tolist() == [3, 4]
 
-    def test_no_slice(self, Table):
-        with patch("palladium.dataset.Table.pandas_read") as read_table:
-            read_table.return_value = dummy_dataframe
-            dataset = Table('mypath', 'targetcol', some='keyword')
+    def test_no_slice(self, CSV):
+        with patch("palladium.dataset.CSV.pandas_read") as read_csv:
+            read_csv.return_value = dummy_dataframe
+            dataset = CSV('mypath', 'targetcol', some='keyword')
             data, target = dataset()
 
-        read_table.assert_called_with('mypath', some='keyword')
+        read_csv.assert_called_with('mypath', some='keyword')
         assert len(data) == len(target) == len(dummy_dataframe)
         assert data.tolist() == [
             [10, 20.0], [11, 21.0], [12, 22.0], [13, 23.0], [14, 24.0],
             ]
         assert target.tolist() == [0, 1, 2, 3, 4]
 
-    def test_table_no_target(self, Table):
-        with patch("palladium.dataset.Table.pandas_read") as read_table:
-            read_table.return_value = dummy_dataframe
-            dataset = Table('mypath', some='keyword')
+    def test_no_target(self, CSV):
+        with patch("palladium.dataset.CSV.pandas_read") as read_csv:
+            read_csv.return_value = dummy_dataframe
+            dataset = CSV('mypath', some='keyword')
             data, target = dataset()
 
-        read_table.assert_called_with('mypath', some='keyword')
+        read_csv.assert_called_with('mypath', some='keyword')
         assert len(data) == len(dummy_dataframe)
         assert target is None
 
