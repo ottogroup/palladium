@@ -113,3 +113,15 @@ With ``__copy__``, you can reduce this down to:
         }
 
 Reducing duplication in your configuration can help avoid errors.
+
+If the target of the ``__copy__`` directive does not exist, we can
+fall back to a default using the ``__default__`` special keyword.  An
+example that defaults to an empty ``param_grid`` for cross
+validation:
+
+.. code-block:: python
+
+    'grid_search': {
+        'param_grid': {'__copy__': 'param_grid', '__default__': {}},
+        # ... some involved grid search configuration
+    }

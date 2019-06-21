@@ -235,6 +235,11 @@ C['myotherconstant'] = 13
                 },
             'mycopiedconstant': {
                 '__copy__': 'mycopiedconstant',
+                '__default__': 42,
+                },
+            'mycopywithdefault': {
+                '__copy__': 'nonexistant',
+                '__default__': 42,
                 },
             }
 
@@ -301,6 +306,7 @@ C['myotherconstant'] = 13
             config['mysupernewdict']['mycopiedcomponent'], MyDummyComponent)
 
         assert config['mycopiedconstant'] == 3
+        assert config['mycopywithdefault'] == 42
 
     def test_initialize_config_logging(self, process_config):
         with patch('palladium.config.dictConfig') as dictConfig:

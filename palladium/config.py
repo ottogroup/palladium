@@ -94,10 +94,20 @@ class CopyHandler:
         if self_reference:
             value = self._resolve(self.configs[:-1], dotted_path)
         else:
-            value = self._resolve(self.configs, dotted_path)
+            try:
+                value = self._resolve(self.configs, dotted_path)
+            except KeyError:
+                if '__default__' in props:
+                    return props['__default__']
+                else:
+                    raise
 
         value = deepcopy(value)
-        if len(props) > 1:
+        nonmagicprops = [
+            prop for prop in props
+            if not (prop.startswith('__') and prop.endswith('__'))
+            ]
+        if nonmagicprops:
             recursive_copy = self.key in value
             value.update(props)
             if not recursive_copy:
