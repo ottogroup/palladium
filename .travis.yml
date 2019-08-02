@@ -20,8 +20,9 @@ before_install:
   - conda update -q conda
   - pip install coveralls
 install:
-  - conda install -q python=$TRAVIS_PYTHON_VERSION --file requirements.txt
-  - travis_retry python setup.py dev
+  - conda install -q python=$TRAVIS_PYTHON_VERSION
+  - pip install -r requirements.txt -r requirements-dev.txt
+  - pip install -e .[docs,testing]
 script:
   - travis_wait py.test --runslow
 deploy:
