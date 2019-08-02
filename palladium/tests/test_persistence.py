@@ -214,7 +214,6 @@ class TestFile:
 
     def test_update_md(self, File):
         with patch('palladium.persistence.File._read_md') as read_md,\
-            patch('palladium.persistence.json.dump') as dump,\
             patch('builtins.open') as open:
             read_md.return_value = {
                 'hello': 'world',
@@ -222,12 +221,14 @@ class TestFile:
                 'properties': {},
                 }
             File('model-{version}')._update_md_orig({'models': [2]})
-            open.assert_called_with('model-metadata.json', 'w')
-            dump.assert_called_with(
-                {'hello': 'world', 'models': [2], 'properties': {}},
-                open.return_value.__enter__.return_value,
-                indent=4,
-                )
+            open.assert_called_with('model-metadata.json', 'wb')
+            fh = open.return_value.__enter__.return_value
+            json_written = json.loads(fh.write.call_args[0][0].decode('utf-8'))
+            assert json_written == {
+                'hello': 'world',
+                'models': [2],
+                'properties': {},
+                }
 
     def test_read_md(self, File):
         with patch('builtins.open') as open,\
@@ -657,7 +658,7 @@ class TestRest:
         assert put_md.called
 
         assert pickle.loads(gzip.decompress(put_model_body)) == model
-        assert len(json.loads(put_md_body)['models']) == 1
+        assert len(json.loads(put_md_body.decode('utf-8'))['models']) == 1
         self.assert_auth_headers(mocked_requests)
 
     def test_download(self, mocked_requests, persister):
@@ -722,7 +723,7 @@ class TestRest:
         persister.delete(1)
         assert put_md.called
         assert delete_model.called
-        assert len(json.loads(put_md_body)['models']) == 0
+        assert len(json.loads(put_md_body.decode('utf-8'))['models']) == 0
         self.assert_auth_headers(mocked_requests)
 
 
