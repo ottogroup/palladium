@@ -35,6 +35,8 @@
     'model': {
         '__factory__': 'sklearn.linear_model.LogisticRegression',
         'C': 0.3,
+        'solver': 'lbfgs',
+        'multi_class': 'auto',
     },
 
     'grid_search': {
