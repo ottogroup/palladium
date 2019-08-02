@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 import threading
 from time import sleep
@@ -150,7 +151,7 @@ class TestRruleThread:
             dtstart=datetime(2014, 10, 30, 13, 21, 18)))
         thread.last_execution = datetime(2014, 10, 30, 13, 21, 18)
         thread.start()
-        sleep(0.005)
+        sleep(0.02)
         assert func.call_count == 1
 
     def test_func_raises(self, RruleThread):
@@ -164,7 +165,7 @@ class TestRruleThread:
 
         with patch('palladium.util.logger') as logger:
             thread.start()
-            sleep(0.005)
+            sleep(0.02)
             assert func.call_count == 1
             assert logger.exception.call_count == 1
 
@@ -174,7 +175,7 @@ class TestRruleThread:
         rr.between.return_value = False
         thread = RruleThread(func, rr, sleep_between_checks=0.0010)
         thread.start()
-        sleep(0.005)
+        sleep(0.02)
         assert func.call_count == 0
         assert rr.between.call_count > 1
 
@@ -390,7 +391,7 @@ class TestRunJob:
         results = []
         for i in range(3):
             results.append(run_job(myfunc, add=i))
-        sleep(0.005)
+        sleep(0.02)
         assert result == 3
         assert len(jobs) == len(results) == 3
         assert set(jobs.keys()) == set(r[1] for r in results)
@@ -406,7 +407,7 @@ class TestRunJob:
         num_threads_before = len(threading.enumerate())
         for i in range(3):
             run_job(myfunc, divisor=i)
-        sleep(0.005)
+        sleep(0.02)
         num_threads_after = len(threading.enumerate())
 
         assert num_threads_before == num_threads_after
@@ -426,15 +427,21 @@ class TestRunJob:
             run_job(myfunc, tts=i/100)
 
         job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
-        assert job1['status'] == 'finished'
-        assert job2['status'] == job3['status'] == 'running'
-        assert len(threading.enumerate()) - num_threads_before == 2
 
-        sleep(0.015)
-        assert job2['status'] == 'finished'
-        assert job3['status'] == 'running'
-        assert len(threading.enumerate()) - num_threads_before == 1
+        samples = []
+        for i in range(10):
+            samples.append((
+                job1['status'],
+                job2['status'],
+                job3['status'],
+                len(threading.enumerate()),
+                ))
+            sleep(1/100)
 
-        sleep(0.015)
-        assert job3['status'] == 'finished'
-        assert len(threading.enumerate()) - num_threads_before == 0
+        got = list(OrderedDict.fromkeys(samples))
+        expected = [
+            ('finished', 'running', 'running', num_threads_before+2),
+            ('finished', 'finished', 'running', num_threads_before+1),
+            ('finished', 'finished', 'finished', num_threads_before+0),
+        ]
+        assert got == expected
