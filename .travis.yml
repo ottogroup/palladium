@@ -22,6 +22,7 @@ before_install:
 install:
   - conda install -q python=$TRAVIS_PYTHON_VERSION
   - pip install -r requirements.txt -r requirements-dev.txt
+  - pip install pandas==0.23.4  # for rpy2 compatibility
   - pip install -e .[docs,testing]
 script:
   - travis_wait py.test --runslow
