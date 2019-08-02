@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from copy import deepcopy
 from functools import reduce
 import operator
 import os
@@ -307,6 +308,43 @@ C['myotherconstant'] = 13
 
         assert config['mycopiedconstant'] == 3
         assert config['mycopywithdefault'] == 42
+
+    @pytest.fixture
+    def config3(self):
+        return {
+            'first': 5,
+            'second': {
+                '__copy__': 'first',
+                '__default__': 6,
+                },
+            }
+
+    def test_copy_source_exists_with_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['first']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_exists_no_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['first']
+        del config3['second']['__default__']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_missing_with_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['second']['__default__']
+        del expected['first']
+        del config3['first']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_missing_no_default(self, process_config, config3):
+        del config3['first']
+        del config3['second']['__default__']
+        with pytest.raises(KeyError):
+            process_config(config3)
 
     def test_initialize_config_logging(self, process_config):
         with patch('palladium.config.dictConfig') as dictConfig:
