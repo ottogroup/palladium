@@ -665,7 +665,7 @@ class TestFitFunctional:
         config['model_persister'] = model_persister
         with flask_app.test_request_context(method='POST'):
             resp = fit()
-        sleep(0.005)
+        sleep(0.02)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'
@@ -686,7 +686,7 @@ class TestFitFunctional:
             fit_base.__name__ = 'mock'
             with flask_app.test_request_context(method='POST', data=args):
                 fit()
-            sleep(0.005)
+            sleep(0.02)
         assert fit_base.call_args == call(**args_expected)
 
 
@@ -707,7 +707,7 @@ class TestUpdateModelCacheFunctional:
         config['model_persister'] = model_persister
         with flask_app.test_request_context(method='POST'):
             resp = update_model_cache()
-        sleep(0.005)
+        sleep(0.02)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'
