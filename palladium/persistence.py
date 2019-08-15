@@ -1,6 +1,6 @@
 """:class:`~palladium.interfaces.ModelPersister` implementations.
 """
-
+import logging
 from abc import abstractmethod
 import base64
 from contextlib import contextmanager
@@ -629,7 +629,8 @@ class CachedUpdatePersister(ModelPersister):
 
         try:
             model = self.impl.read(*args, **kwargs)
-        except LookupError:
+        except LookupError as ex:
+            logging.exception("Cannot find model version")
             model = None
         if model is not None:
             self.cache[self.__pld_config_key__] = model
