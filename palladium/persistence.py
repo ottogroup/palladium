@@ -135,7 +135,7 @@ class RestIO(FileLikeIO):
             else:
                 reader = codecs.getreader(res.encoding or 'utf-8')
                 return reader(res.raw)
-        elif mode[0] == 'w':
+        elif mode == 'wb':
             return self._write(path, mode=mode)
         raise NotImplementedError("filemode: %s" % (mode,))
 
@@ -252,8 +252,9 @@ class FileLike(ModelPersister):
     def _update_md(self, data):
         data2 = self._read_md()
         data2.update(data)
-        with self.io.open(self._md_filename, 'w') as f:
-            json.dump(data2, f, indent=4)
+        with self.io.open(self._md_filename, 'wb') as f:
+            bytes = json.dumps(data2, indent=4).encode('utf-8')
+            f.write(bytes)
 
     def upgrade(self, from_version=None, to_version=__version__):
         if from_version is None:

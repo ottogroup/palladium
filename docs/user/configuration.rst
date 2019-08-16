@@ -15,7 +15,12 @@ Configuration files use Python syntax.  For an introduction, please
 visit the :ref:`tutorial`.
 
 Palladium uses an environment variable called ``PALLADIUM_CONFIG`` to
-look up the location of the configuration file.
+look up the location of one or more configuration files.  If
+``PALLADIUM_CONFIG`` is not set, Palladium will try to find a
+configuration file at these locations:
+
+- ``palladium-config.py``
+- ``etc/palladium-config.py``
 
 Variables
 =========
@@ -41,7 +46,7 @@ folder as the configuration:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/data.csv'.format(here),
         }
 
@@ -75,7 +80,7 @@ file:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -83,7 +88,7 @@ file:
         }
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/test.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -95,7 +100,7 @@ With ``__copy__``, you can reduce this down to:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -108,3 +113,15 @@ With ``__copy__``, you can reduce this down to:
         }
 
 Reducing duplication in your configuration can help avoid errors.
+
+If the target of the ``__copy__`` directive does not exist, we can
+fall back to a default using the ``__default__`` special keyword.  An
+example that defaults to an empty ``param_grid`` for cross
+validation:
+
+.. code-block:: python
+
+    'grid_search': {
+        'param_grid': {'__copy__': 'param_grid', '__default__': {}},
+        # ... some involved grid search configuration
+    }

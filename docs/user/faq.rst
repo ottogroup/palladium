@@ -164,6 +164,36 @@ passed at runtime.
         'n_jobs': -1,
         }
 
+Can I use Bayesian optimization instead of grid search to tune my hyperparameters?
+==================================================================================
+
+The grid search configuration allows you to use a class other than
+:class:`sklearn.grid_search.GridSearchCV` to do the hyperparameter
+search.  Here's an example configuration that uses `scikit-optimize
+<https://scikit-optimize.github.io/>`_ to search for hyperparameters
+using Bayesian optimization, assuming an :class:`sklearn.svm.SVC`
+classifier:
+
+.. code-block:: python
+
+    'grid_search': {
+        '__factory__': 'skopt.BayesSearchCV',
+        'estimator': {'__copy__': 'model'},
+        'n_iter': 16,
+        'search_spaces': {
+            'C': {
+                '__factory__': 'skopt.space.Real',
+                'low': 1e-6, 'high': 1e+1, 'prior': 'log-uniform',
+            },
+            'degree': {
+                '__factory__': 'skopt.space.Integer',
+                'low': 1, 'high': 20,
+            },
+        },
+        'return_train_score': True,
+        'refit': False,
+        'verbose': 4,
+    }
 
 Can I use my cluster to run a hyperparameter search?
 ====================================================

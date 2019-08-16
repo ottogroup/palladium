@@ -12,6 +12,11 @@ PALLADIUM_CONFIG_ERROR = """
   refer to the manual for more details.
 """
 
+DEFAULT_CONFIG_FILE_LOCATIONS = (
+    'palladium-config.py',
+    os.path.join('etc', 'palladium-config.py'),
+    )
+
 
 class Config(dict):
     """A dictionary that represents the app's configuration.
@@ -89,10 +94,20 @@ class CopyHandler:
         if self_reference:
             value = self._resolve(self.configs[:-1], dotted_path)
         else:
-            value = self._resolve(self.configs, dotted_path)
+            try:
+                value = self._resolve(self.configs, dotted_path)
+            except KeyError:
+                if '__default__' in props:
+                    return props['__default__']
+                else:
+                    raise
 
         value = deepcopy(value)
-        if len(props) > 1:
+        nonmagicprops = [
+            prop for prop in props
+            if not (prop.startswith('__') and prop.endswith('__'))
+            ]
+        if nonmagicprops:
             recursive_copy = self.key in value
             value.update(props)
             if not recursive_copy:
@@ -212,7 +227,15 @@ def _get_config(**extra):
     if not _config.initialized:
         _config.update(extra)
         _config.initialized = True
+
         fnames = os.environ.get('PALLADIUM_CONFIG')
+        if fnames is None:
+            for fname in DEFAULT_CONFIG_FILE_LOCATIONS:
+                if os.path.exists(fname):  # pragma: no cover
+                    fnames = fname
+                    print("Using configuration at {}".format(fname))
+                    break
+
         if fnames is not None:
             configs = []
             fnames = [fname.strip() for fname in fnames.split(',')]

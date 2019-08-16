@@ -15,6 +15,7 @@ build:
   entry_points:
     - pld-admin = palladium.fit:admin_cmd
     - pld-devserver = palladium.server:devserver_cmd
+    - pld-export = palladium.util:export_cmd
     - pld-fit = palladium.fit:fit_cmd
     - pld-grid-search = palladium.fit:grid_search_cmd
     - pld-list = palladium.eval:list_cmd
@@ -71,6 +72,7 @@ test:
     - py.test --pyargs palladium
     - pld-admin --help
     - pld-devserver --help
+    - pld-export --help
     - pld-fit --help
     - pld-grid-search --help
     - pld-list --help

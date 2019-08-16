@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from copy import deepcopy
 from functools import reduce
 import operator
 import os
@@ -38,6 +40,14 @@ class BadDummy:
         self.cfg = get_config().copy()
 
 
+@contextmanager
+def cwd(path):
+    before = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(before)
+
+
 def test_config_class_keyerror():
     from palladium.config import Config
     with pytest.raises(KeyError) as e:
@@ -71,7 +81,7 @@ class TestGetConfig:
 
     @pytest.fixture
     def config1_fname(self, tmpdir):
-        path = tmpdir.join('config1.py')
+        path = tmpdir.join('palladium-config.py')
         path.write("""{
             'env': environ['ENV1'],
             'here': here,
@@ -99,6 +109,13 @@ class TestGetConfig:
 
     def test_extras(self, get_config):
         assert get_config(foo='bar')['foo'] == 'bar'
+
+    def test_default_config(self, get_config, config1_fname, monkeypatch):
+        here = os.path.dirname(config1_fname)
+        monkeypatch.setitem(os.environ, 'ENV1', 'one')
+        with cwd(here):
+            config = get_config()
+        assert config['here'] == here
 
     def test_variables(self, get_config, config1_fname, monkeypatch):
         monkeypatch.setitem(os.environ, 'PALLADIUM_CONFIG', config1_fname)
@@ -219,6 +236,11 @@ C['myotherconstant'] = 13
                 },
             'mycopiedconstant': {
                 '__copy__': 'mycopiedconstant',
+                '__default__': 42,
+                },
+            'mycopywithdefault': {
+                '__copy__': 'nonexistant',
+                '__default__': 42,
                 },
             }
 
@@ -285,6 +307,44 @@ C['myotherconstant'] = 13
             config['mysupernewdict']['mycopiedcomponent'], MyDummyComponent)
 
         assert config['mycopiedconstant'] == 3
+        assert config['mycopywithdefault'] == 42
+
+    @pytest.fixture
+    def config3(self):
+        return {
+            'first': 5,
+            'second': {
+                '__copy__': 'first',
+                '__default__': 6,
+                },
+            }
+
+    def test_copy_source_exists_with_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['first']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_exists_no_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['first']
+        del config3['second']['__default__']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_missing_with_default(self, process_config, config3):
+        expected = deepcopy(config3)
+        expected['second'] = expected['second']['__default__']
+        del expected['first']
+        del config3['first']
+        got = process_config(config3)
+        assert got == expected
+
+    def test_copy_source_missing_no_default(self, process_config, config3):
+        del config3['first']
+        del config3['second']['__default__']
+        with pytest.raises(KeyError):
+            process_config(config3)
 
     def test_initialize_config_logging(self, process_config):
         with patch('palladium.config.dictConfig') as dictConfig:

@@ -5,7 +5,7 @@
     },
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -15,12 +15,11 @@
             'species',
         ],
         'target_column': 'species',
-        'sep': ',',
         'nrows': 100,
     },
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.Table',
+        '__factory__': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -30,19 +29,21 @@
             'species',
         ],
         'target_column': 'species',
-        'sep': ',',
         'skiprows': 100,
     },
 
     'model': {
         '__factory__': 'sklearn.linear_model.LogisticRegression',
         'C': 0.3,
+        'solver': 'lbfgs',
+        'multi_class': 'auto',
     },
 
     'grid_search': {
         'param_grid': {
             'C': [0.1, 0.3, 1.0],
         },
+        'return_train_score': True,
         'verbose': 4,
         'n_jobs': -1,
     },
