@@ -208,24 +208,23 @@ grid search:
 
 .. code-block:: python
 
+{
     'grid_search': {
         '__factory__': 'palladium.fit.with_parallel_backend',
         'estimator': {
             '__factory__': 'sklearn.model_selection.GridSearchCV',
             'estimator': {'__copy__': 'model'},
-            'param_grid': {
-                'C': [0.1, 0.3, 1.0],
-            },
-            'n_jobs': -1,
+            'param_grid': {'__copy__': 'grid_search.param_grid'},
+            'scoring': {'__copy__': 'scoring'},
         },
-        'backend': 'dask.distributed',
-        'scheduler_host': '127.0.0.1:8786',
+        'backend': 'dask',
     },
 
-    '_init_distributed': {
-        '__factory__': 'palladium.util.resolve_dotted_name',
-        'dotted_name': 'distributed.joblib.joblib',
+    '_init_client': {
+        '__factory__': 'dask.distributed.Client',
+        'address': '127.0.0.1:8786',
     },
+}
 
 To start up the Dask scheduler and workers you can follow the
 dask.distributed documentation.  Here's an example that runs three
@@ -236,7 +235,7 @@ workers locally:
     $ dask-scheduler
     Scheduler started at 127.0.0.1:8786
 
-    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786  # start each in a new terminal
     $ dask-worker 127.0.0.1:8786
     $ dask-worker 127.0.0.1:8786    
 
