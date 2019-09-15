@@ -218,18 +218,17 @@ grid search:
             },
             'n_jobs': -1,
         },
-        'backend': 'dask.distributed',
-        'scheduler_host': '127.0.0.1:8786',
+        'backend': 'dask',
     },
 
-    '_init_distributed': {
-        '__factory__': 'palladium.util.resolve_dotted_name',
-        'dotted_name': 'distributed.joblib.joblib',
+    '_init_client': {
+        '__factory__': 'dask.distributed.Client',
+        'address': '127.0.0.1:8786',
     },
 
-To start up the Dask scheduler and workers you can follow the
-dask.distributed documentation.  Here's an example that runs three
-workers locally:
+For details on how to set up Dask workers and a scheduler, please
+consult the `Dask docs <https://docs.dask.org>`_.  But here's how you
+would start up a scheduler and three workers locally:
 
 .. code-block:: bash
 
