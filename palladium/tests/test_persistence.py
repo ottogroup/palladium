@@ -1,4 +1,5 @@
 import codecs
+import copy
 import gzip
 import json
 import os
@@ -956,19 +957,42 @@ class TestS3:
     def test_write_read(self, dummy_model, bucket_name, s3_cls_with_bucket):
         persister = s3_cls_with_bucket(posixpath.join(
             bucket_name,
-            'mymodel-{version}',
+            'mymodel-single-{version}',
         ))
         persister.write(dummy_model)
 
         assert persister.io.exists(posixpath.join(
             bucket_name,
-            'mymodel-1.pkl.gz',
+            'mymodel-single-1.pkl.gz',
         ))
 
         assert persister.io.exists(posixpath.join(
             bucket_name,
-            'mymodel-metadata.json',
+            'mymodel-single-metadata.json',
         ))
 
         model = persister.read(version=1)
         assert type(model) == type(dummy_model)
+
+    def test_successive_writes(self, dummy_model, bucket_name, s3_cls_with_bucket):
+        # NOTE: using the same file spec as with `test_write_read` fails,
+        # probably due to some internal inconsistency in moto.
+        persister = s3_cls_with_bucket(posixpath.join(
+            bucket_name,
+            'mymodel-successive-{version}',
+        ))
+
+        dummy_model_1 = copy.copy(dummy_model)
+        dummy_model_1.weight = 8
+
+        dummy_model_2 = copy.copy(dummy_model)
+        dummy_model_2.weight = 9
+
+        persister.write(dummy_model_1)
+        persister.write(dummy_model_2)
+
+        read_model_1 = persister.read(version=1)
+        read_model_2 = persister.read(version=2)
+
+        assert read_model_1.weight == dummy_model_1.weight
+        assert read_model_2.weight == dummy_model_2.weight
