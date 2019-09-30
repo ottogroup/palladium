@@ -61,6 +61,7 @@ setup(name='palladium',
           'docs': docs_require,
           'julia': ['julia'],
           'R': ['rpy2'],
+          'S3': ['s3fs', 'moto'],
           },
       entry_points={
           'console_scripts': [
