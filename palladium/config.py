@@ -38,7 +38,7 @@ _config = Config()
 
 
 class ComponentHandler:
-    key = '__factory__'
+    key = '!'
 
     def __init__(self, config):
         self.config = config
@@ -61,6 +61,10 @@ class ComponentHandler:
         for component in self.components:
             if hasattr(component, 'initialize_component'):
                 component.initialize_component(self.config)
+
+
+class ComponentHandler2(ComponentHandler):
+    key = '__factory__'
 
 
 class CopyHandler:
@@ -131,9 +135,24 @@ class PythonHandler:
         return props
 
 
+def rewrite_handler(key_from, key_to):
+    class RewriteHandler:
+        key = key_from
+        target = key_to
+
+        def __init__(self, config):
+            pass
+
+        def __call__(self, name, props):
+            props[self.target] = props.pop(self.key)
+            return props
+    return RewriteHandler
+
+
 def _handlers_phase0(configs):
     return {
         Handler.key: Handler(configs) for Handler in [
+            rewrite_handler('__factory__', '!'),
             CopyHandler,
             ]
         }

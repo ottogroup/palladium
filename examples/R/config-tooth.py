@@ -5,25 +5,25 @@
     },
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.R.DatasetLoader',
+        '!': 'palladium.R.DatasetLoader',
         'scriptname': 'tooth.R',
         'funcname': 'dataset',
     },
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.R.DatasetLoader',
+        '!': 'palladium.R.DatasetLoader',
         'scriptname': 'tooth.R',
         'funcname': 'dataset',
     },
 
     'model': {
-        '__factory__': 'sklearn.pipeline.Pipeline',
+        '!': 'sklearn.pipeline.Pipeline',
         'steps': [
             ['rpy2', {
-                '__factory__': 'palladium.R.Rpy2Transform',
+                '!': 'palladium.R.Rpy2Transform',
             }],
             ['regressor', {
-                '__factory__': 'palladium.R.RegressionModel',
+                '!': 'palladium.R.RegressionModel',
                 'scriptname': 'tooth.R',
                 'funcname': 'train.randomForest',
             }],
@@ -31,15 +31,15 @@
     },
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'impl': {
-            '__factory__': 'palladium.persistence.Database',
+            '!': 'palladium.persistence.Database',
             'url': 'sqlite:///tooth-model.db',
         },
     },
 
     'predict_service': {
-        '__factory__': 'palladium.server.PredictService',
+        '!': 'palladium.server.PredictService',
         'mapping': [
             ('supp', 'str'),
             ('dose', 'float'),

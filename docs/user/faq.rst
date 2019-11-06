@@ -156,7 +156,7 @@ passed at runtime.
             'C': [0.1, 0.3, 1.0],
             },
         'cv': {
-            '__factory__': 'palladium.util.Partial',
+            '!': 'palladium.util.Partial',
             'func': 'sklearn.cross_validation.StratifiedKFold',
             'random_state': 0,
             },
@@ -177,16 +177,16 @@ classifier:
 .. code-block:: python
 
     'grid_search': {
-        '__factory__': 'skopt.BayesSearchCV',
+        '!': 'skopt.BayesSearchCV',
         'estimator': {'__copy__': 'model'},
         'n_iter': 16,
         'search_spaces': {
             'C': {
-                '__factory__': 'skopt.space.Real',
+                '!': 'skopt.space.Real',
                 'low': 1e-6, 'high': 1e+1, 'prior': 'log-uniform',
             },
             'degree': {
-                '__factory__': 'skopt.space.Integer',
+                '!': 'skopt.space.Integer',
                 'low': 1, 'high': 20,
             },
         },
@@ -210,9 +210,9 @@ grid search:
 
 {
     'grid_search': {
-        '__factory__': 'palladium.fit.with_parallel_backend',
+        '!': 'palladium.fit.with_parallel_backend',
         'estimator': {
-            '__factory__': 'sklearn.model_selection.GridSearchCV',
+            '!': 'sklearn.model_selection.GridSearchCV',
             'estimator': {'__copy__': 'model'},
             'param_grid': {'__copy__': 'grid_search.param_grid'},
             'scoring': {'__copy__': 'scoring'},
@@ -221,7 +221,7 @@ grid search:
     },
 
     '_init_client': {
-        '__factory__': 'dask.distributed.Client',
+        '!': 'dask.distributed.Client',
         'address': '127.0.0.1:8786',
     },
 }
