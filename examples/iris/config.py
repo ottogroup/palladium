@@ -5,7 +5,7 @@
     },
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -19,7 +19,7 @@
     },
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -33,7 +33,7 @@
     },
 
     'model': {
-        '__factory__': 'sklearn.linear_model.LogisticRegression',
+        '!': 'sklearn.linear_model.LogisticRegression',
         'C': 0.3,
         'solver': 'lbfgs',
         'multi_class': 'auto',
@@ -49,16 +49,16 @@
     },
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'update_cache_rrule': {'freq': 'HOURLY'},
         'impl': {
-            '__factory__': 'palladium.persistence.Database',
+            '!': 'palladium.persistence.Database',
             'url': 'sqlite:///iris-model.db',
         },
     },
 
     'predict_service': {
-        '__factory__': 'palladium.server.PredictService',
+        '!': 'palladium.server.PredictService',
         'mapping': [
             ('sepal length', 'float'),
             ('sepal width', 'float'),

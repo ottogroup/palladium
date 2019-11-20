@@ -320,7 +320,7 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
@@ -342,14 +342,14 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
             'entry_point': '/predict1',
         }
         config['my_predict_service2'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
@@ -381,14 +381,14 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
             'entry_point': '/predict1',  # <--
         }
         config['my_predict_service2'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],

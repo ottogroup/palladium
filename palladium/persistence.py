@@ -688,9 +688,9 @@ class S3(FileLike):
     persister. For example, if you used the ``File`` persister
     before, change your config as follows:
 
-        -   '__factory__': 'palladium.persistence.File',
+        -   '!': 'palladium.persistence.File',
         -   'path': 'models/mymodel-{version}',
-        +   '__factory__': 'palladium.persistence.S3',
+        +   '!': 'palladium.persistence.S3',
         +   'path': 'your-s3-bucket/models/mymodel-{version}',
 
     Note that the first part of the path denotes the s3 bucket.

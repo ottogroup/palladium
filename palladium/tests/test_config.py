@@ -86,7 +86,7 @@ class TestGetConfig:
             'env': environ['ENV1'],
             'here': here,
             'blocking': {
-                '__factory__': 'palladium.tests.test_config.BlockingDummy',
+                '!': 'palladium.tests.test_config.BlockingDummy',
             }
         }""")
         return str(path)
@@ -102,7 +102,7 @@ class TestGetConfig:
         path = tmpdir.join('config3.py')
         path.write("""{
             'bad': {
-                '__factory__': 'palladium.tests.test_config.BadDummy'
+                '!': 'palladium.tests.test_config.BadDummy'
              }
         }""")
         return str(path)
@@ -169,14 +169,14 @@ class TestProcessConfig:
         dummy = 'palladium.tests.test_config.MyDummyComponent'
         return {
             'mycomponent': {
-                '__factory__': dummy,
+                '!': dummy,
                 'arg1': 3,
                 'arg2': {'no': 'factory'},
                 'subcomponent': {
-                    '__factory__': dummy,
+                    '!': dummy,
                     'arg1': {
                         'subsubcomponent': {
-                            '__factory__':
+                            '!':
                             dummy,
                             'arg1': 'wobwob',
                             'arg2': 9,
@@ -186,16 +186,16 @@ class TestProcessConfig:
                     },
                 },
             'mylistofcomponents': [{
-                '__factory__': dummy,
+                '!': dummy,
                 'arg1': 'wobwob',
                 },
                 'somethingelse',
                 ],
             'mynestedlistofcomponents': [[{
-                '__factory__': dummy,
+                '!': dummy,
                 'arg1': 'feep',
                 'arg2': {
-                    '__factory__': dummy,
+                    '__factory__': dummy,  # alternative to '!'
                     'arg1': 6,
                 },
             }]],
@@ -214,7 +214,7 @@ class TestProcessConfig:
                 },
 
             '__python__': """
-C['mynestedlistofcomponents'][0][0]['arg2']['__factory__'] = 'builtins:dict'
+C['mynestedlistofcomponents'][0][0]['arg2']['!'] = 'builtins:dict'
 C['myotherconstant'] = 13
 """,
             }

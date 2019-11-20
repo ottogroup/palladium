@@ -31,7 +31,7 @@ configuration from the :ref:`tutorial`:
 .. code-block:: python
 
     'predict_service': {
-        '__factory__': 'palladium.server.PredictService',
+        '!': 'palladium.server.PredictService',
         'mapping': [
             ('sepal length', 'float'),
             ('sepal width', 'float'),
@@ -106,7 +106,7 @@ there's a list of predictions that's returned:
 
 Should a different output format be desired than the one implemented
 by :class:`~palladium.interfaces.PredictService`, it is possible to use a
-different class altogether by setting an appropriate ``__factory__``
+different class altogether by setting an appropriate ``!``
 (though that class will likely derive from
 :class:`~palladium.interfaces.PredictService` for reasons of convenience).
 
@@ -271,13 +271,13 @@ endpoints is this:
 
     'flask_add_url_rules': [
         {
-            '__factory__': 'palladium.server.add_url_rule',
+            '!': 'palladium.server.add_url_rule',
             'rule': '/fit',
             'view_func': 'palladium.server.fit',
             'methods': ['POST'],
         },
         {
-            '__factory__': 'palladium.server.add_url_rule',
+            '!': 'palladium.server.add_url_rule',
             'rule': '/update-model-cache',
             'view_func': 'palladium.server.update_model_cache',
             'methods': ['POST'],
