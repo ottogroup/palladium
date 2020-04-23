@@ -183,7 +183,7 @@ class FileLike(ModelPersister):
         if version is None:
             props = self.list_properties()
             if 'active-model' not in props:
-                raise LookupError("No active model available")
+                raise LookupError("No active model available:"+self.path)
             version = props['active-model']
 
         fname = self.path.format(version=version) + '.pkl.gz'
