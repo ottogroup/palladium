@@ -657,3 +657,49 @@ class CachedUpdatePersister(ModelPersister):
 
     def upgrade(self, from_version=None, to_version=__version__):
         return self.impl.upgrade(from_version, to_version)
+
+
+class S3IO(FileLikeIO):
+    """IO interface that glues palladium to S3 buckets."""
+    def __init__(self, **kwargs):
+        try:
+            import s3fs
+        except ImportError:
+            raise ImportError('S3IO needs the s3fs module to work correctly.')
+
+        self.fs = s3fs.S3FileSystem(anon=False)
+
+    def open(self, path, mode='r'):
+        return self.fs.open(path, mode=mode)
+
+    def exists(self, path):
+        return self.fs.exists(path)
+
+    def remove(self, path):
+        return self.fs.rm(path)
+
+
+class S3(FileLike):
+    """Persister that acts like a File persister but uses
+    S3 IO in the background. Expects the path of the bucket
+    in the path parameter.
+
+    To use it with palladium, just use this class as model
+    persister. For example, if you used the ``File`` persister
+    before, change your config as follows:
+
+        -   '__factory__': 'palladium.persistence.File',
+        -   'path': 'models/mymodel-{version}',
+        +   '__factory__': 'palladium.persistence.S3',
+        +   'path': 'your-s3-bucket/models/mymodel-{version}',
+
+    Note that the first part of the path denotes the s3 bucket.
+
+    Parameters
+    ----------
+
+    path : str
+      The path to the bucket and file, e.g. ``'my-bucket/my-folder/my-file'``.
+    """
+    def __init__(self, path):
+        super().__init__(path, S3IO())
