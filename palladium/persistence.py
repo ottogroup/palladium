@@ -196,7 +196,17 @@ class FileLike(ModelPersister):
 
         with self.io.open(fname, 'rb') as fh:
             with gzip.open(fh, 'rb') as f:
-                return pickle.load(f)
+                model = pickle.load(f)
+
+        attachments = annotate(model).get('__attachments__', [])
+        for key in attachments:
+            fname_attach = self.attach_filename(version=version, key=key)
+            if self.io.exists(fname_attach):
+                with open(fname_attach, 'rb') as f:
+                    data_attach = base64.b64encode(f.read())
+                    annotate(model, {key: data_attach})
+
+        return model
 
     def write(self, model):
         last_version = 0
@@ -207,10 +217,28 @@ class FileLike(ModelPersister):
         version = last_version + 1
         li.append(annotate(model, {'version': version}))
 
+        annotations = annotate(model)
+        attachments = {
+            key: data
+            for key, data in annotations.items()
+            if key.startswith('attachments/')
+            }
+        if attachments:
+            for key in attachments:
+                del annotations[key]
+            annotations['__attachments__'] = tuple(attachments.keys())
+        annotate(model, annotations)
+
         fname = self.path.format(version=version) + '.pkl.gz'
         with self.io.open(fname, 'wb') as fh:
             with gzip.open(fh, 'wb') as f:
                 pickle.dump(model, f)
+
+        if attachments:
+            for key, data in attachments.items():
+                fname_attach = self.attach_filename(version=version, key=key)
+                with self.io.open(fname_attach, 'wb') as f:
+                    f.write(base64.b64decode(data))
 
         self._update_md({'models': li})
         return version
@@ -230,18 +258,32 @@ class FileLike(ModelPersister):
         self._update_md({'properties': md['properties']})
 
     def delete(self, version):
-        md = self._read_md()
-        versions = [m['version'] for m in md['models']]
         version = int(version)
-        if version not in versions:
+        md = self._read_md()
+        try:
+            model_md = [m for m in md['models'] if m['version'] == version][0]
+        except IndexError:
             raise LookupError("No such version: {}".format(version))
+
         self._update_md({
             'models': [m for m in md['models'] if m['version'] != version]})
         self.io.remove(self.path.format(version=version) + '.pkl.gz')
 
+        attachments = model_md.get('__attachments__', [])
+        for key in attachments:
+            fname_attach = self.attach_filename(version=version, key=key)
+            if self.io.exists(fname_attach):
+                self.io.remove(fname_attach)
+
     @property
     def _md_filename(self):
         return self.path.format(version='metadata') + '.json'
+
+    def attach_filename(self, version, key):
+        return (
+            self.path.format(version=version) +
+            '-{}'.format(key[len('attachments/'):])
+            )
 
     def _read_md(self):
         if self.io.exists(self._md_filename):
