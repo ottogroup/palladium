@@ -110,20 +110,22 @@ class TestFile:
             patch('palladium.persistence.File.list_properties') as lp:
             lp.return_value = {}
             lm.return_value = []
-            f = File('/models/model-{version}')
+            filename = '/models/model-{version}'
+            f = File(filename)
             with pytest.raises(LookupError) as exc:
                 f.read()
-            assert exc.value.args[0] == 'No active model available'
+            assert exc.value.args[0] == 'No active model available: {}'.format(filename)
 
     def test_read_no_active_model(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File.list_properties') as lp:
             lp.return_value = {}
             lm.return_value = [{'version': 99}]
-            f = File('/models/model-{version}')
+            filename = '/models/model-{version}'
+            f = File(filename)
             with pytest.raises(LookupError) as exc:
                 f.read()
-            assert exc.value.args[0] == 'No active model available'
+            assert exc.value.args[0] == 'No active model available: {}'.format(filename)
 
     def test_read_no_model_with_given_version(self, File):
         with patch('palladium.persistence.os.path.exists') as exists:
