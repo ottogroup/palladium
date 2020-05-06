@@ -712,6 +712,8 @@ class S3IO(FileLikeIO):
         self.fs = s3fs.S3FileSystem(anon=False)
 
     def open(self, path, mode='r'):
+        # this is needed to avoid reading stale metadata JSONs
+        self.fs.invalidate_cache()
         return self.fs.open(path, mode=mode)
 
     def exists(self, path):
