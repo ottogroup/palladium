@@ -438,7 +438,6 @@ class TestWithParallelBackend:
             LogisticRegression(solver='liblinear'),
             param_grid={'C': [0.001, 0.01]},
             cv=3,
-            iid=False,
             )
 
     @pytest.mark.parametrize('backend', ['threading', 'sequential'])

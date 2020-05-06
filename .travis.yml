@@ -8,7 +8,7 @@ matrix:
       dist: xenial
       sudo: true
 env:
-  - TRAVIS=yes
+  - TRAVIS=yes AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test
 before_install:
   - pip install -U pip && pip --version
   - wget https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh -O miniconda.sh
