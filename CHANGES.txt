@@ -1,3 +1,14 @@
+v1.2.3 - 2020-05-07
+===================
+
+- Updated requirements in order to use newer versions of dependencies
+  (also fixing potential security vulnerabilities in dependencies)
+
+- Added support for handling model attachments
+
+- Exclamation mark `!` can now be used instead of `__factory__` in
+  configuration files
+
 v1.2.2.1 - 2019-09-30
 =====================
 
