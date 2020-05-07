@@ -42,7 +42,7 @@ above:
 .. code-block:: python
 
   'dataset_loader_train': {
-      '__factory__': 'palladium.R.DatasetLoader',
+      '!': 'palladium.R.DatasetLoader',
       'scriptname': 'iris.R',
       'funcname': 'dataset',
       },
@@ -54,7 +54,7 @@ R classification models are configured very similarly, using
 .. code-block:: python
 
   'model': {
-      '__factory__': 'palladium.R.ClassificationModel',
+      '!': 'palladium.R.ClassificationModel',
       'scriptname': 'iris.R',
       'funcname': 'train.randomForest',
       'encode_labels': True,
@@ -99,7 +99,7 @@ Here's how this would look like:
 .. code-block:: python
 
   'model': {
-      '__factory__': 'palladium.R.RegressionModel',
+      '!': 'palladium.R.RegressionModel',
       'scriptname': 'tooth.R',
       'funcname': 'train.randomForest',
       },
@@ -110,7 +110,7 @@ classification above:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.R.DatasetLoader',
+        '!': 'palladium.R.DatasetLoader',
         'scriptname': 'tooth.R',
         'funcname': 'dataset',
     },
@@ -129,13 +129,13 @@ including :class:`~palladium.R.Rpy2Transform` in a
 .. code-block:: python
 
     'model': {
-        '__factory__': 'sklearn.pipeline.Pipeline',
+        '!': 'sklearn.pipeline.Pipeline',
         'steps': [
             ['rpy2', {
-                '__factory__': 'palladium.R.Rpy2Transform',
+                '!': 'palladium.R.Rpy2Transform',
             }],
             ['regressor', {
-                '__factory__': 'palladium.R.RegressionModel',
+                '!': 'palladium.R.RegressionModel',
                 'scriptname': 'tooth.R',
                 'funcname': 'train.randomForest',
             }],

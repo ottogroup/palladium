@@ -424,12 +424,12 @@ class TestRunJob:
 
         num_threads_before = len(threading.enumerate())
         for i in range(3):
-            run_job(myfunc, tts=i/100)
+            run_job(myfunc, tts=5*i/100)
 
         job1, job2, job3 = sorted(jobs.values(), key=lambda x: x['started'])
 
         samples = []
-        for i in range(10):
+        for i in range(50):
             samples.append((
                 job1['status'],
                 job2['status'],

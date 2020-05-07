@@ -13,6 +13,8 @@ from unittest.mock import patch
 import requests_mock
 import pytest
 
+from palladium.interfaces import annotate
+
 
 class Dummy:
     def __init__(self, **kwargs):
@@ -74,12 +76,14 @@ class TestFile:
             patch('palladium.persistence.File.list_properties') as lp,\
             patch('palladium.persistence.os.path.exists') as exists,\
             patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.annotate') as annotate,\
             patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
             lp.return_value = {'active-model': '99'}
             exists.side_effect = lambda fn: fn == '/models/model-99.pkl.gz'
             open.return_value = MagicMock()
+            annotate.return_value = {}
             result = File('/models/model-{version}').read()
             open.assert_called_with('/models/model-99.pkl.gz', 'rb')
             assert result == load.return_value
@@ -89,11 +93,13 @@ class TestFile:
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.os.path.exists') as exists,\
             patch('palladium.persistence.open') as open,\
+            patch('palladium.persistence.annotate') as annotate,\
             patch('palladium.persistence.gzip.open') as gzopen,\
             patch('palladium.persistence.pickle.load') as load:
             lm.return_value = [{'version': 99}]
             exists.side_effect = lambda fn: fn == '/models/model-432.pkl.gz'
             open.return_value = MagicMock()
+            annotate.return_value = {}
             result = File('/models/model-{version}').read(432)
             open.assert_called_with('/models/model-432.pkl.gz', 'rb')
             assert result == load.return_value
@@ -104,20 +110,22 @@ class TestFile:
             patch('palladium.persistence.File.list_properties') as lp:
             lp.return_value = {}
             lm.return_value = []
-            f = File('/models/model-{version}')
+            filename = '/models/model-{version}'
+            f = File(filename)
             with pytest.raises(LookupError) as exc:
                 f.read()
-            assert exc.value.args[0] == 'No active model available'
+            assert exc.value.args[0] == 'No active model available: {}'.format(filename)
 
     def test_read_no_active_model(self, File):
         with patch('palladium.persistence.File.list_models') as lm,\
             patch('palladium.persistence.File.list_properties') as lp:
             lp.return_value = {}
             lm.return_value = [{'version': 99}]
-            f = File('/models/model-{version}')
+            filename = '/models/model-{version}'
+            f = File(filename)
             with pytest.raises(LookupError) as exc:
                 f.read()
-            assert exc.value.args[0] == 'No active model available'
+            assert exc.value.args[0] == 'No active model available: {}'.format(filename)
 
     def test_read_no_model_with_given_version(self, File):
         with patch('palladium.persistence.os.path.exists') as exists:
@@ -383,6 +391,69 @@ class TestFile:
             open_rv = open.return_value.__enter__.return_value
             new_md = {'models': [], 'properties': {}}
             dump.assert_called_with(new_md, open_rv, indent=4)
+
+
+class TestFileAttachments:
+    @pytest.fixture
+    def persister(self, tmpdir):
+        from palladium.persistence import File
+        model1 = Dummy()
+        annotate(model1, {'attachments/myatt.txt': 'aGV5',
+                          'attachments/my2ndatt.txt': 'aG8='})
+        model2 = Dummy()
+        annotate(model2, {'attachments/myatt.txt': 'aG8='})
+        persister = File(str(tmpdir) + '/model-{version}')
+        persister.write(model1)
+        persister.write(model2)
+        return persister
+
+    def test_filenames(self, persister, tmpdir):
+        # Attachment files are namespaced by the model:
+        assert sorted(os.listdir(tmpdir)) == [
+            'model-1-my2ndatt.txt', 'model-1-myatt.txt', 'model-1.pkl.gz',
+            'model-2-myatt.txt', 'model-2.pkl.gz',
+            'model-metadata.json',
+            ]
+
+    def test_attachment_file_contents(self, persister, tmpdir):
+        # Attachment data is written to files system decoded:
+        with open(tmpdir + '/model-1-myatt.txt', 'rb') as f:
+            assert f.read() == b'hey'
+        with open(tmpdir + '/model-1-my2ndatt.txt', 'rb') as f:
+            assert f.read() == b'ho'
+        with open(tmpdir + '/model-2-myatt.txt', 'rb') as f:
+            assert f.read() == b'ho'
+
+    def test_attachment_not_in_metadata_file(self, persister, tmpdir):
+        # Attachment data is not written to the metadata file:
+        with open(tmpdir + '/model-metadata.json') as f:
+            md = json.loads(f.read())
+            assert len(md['models']) == 2
+            for model_md in md['models']:
+                assert 'attachments/myatt.txt' not in model_md
+
+    def test_attachment_not_in_pickle(self, persister, tmpdir):
+        # Attachment data is not pickled as part of the model:
+        with open(tmpdir + '/model-1.pkl.gz', 'rb') as fh:
+            with gzip.open(fh, 'rb') as f:
+                model1 = pickle.load(f)
+                assert 'attachments/myatt.txt' not in annotate(model1)
+
+    def test_loaded_back_on_read(self, persister, tmpdir):
+        # Attachment is read back from the file into metadata
+        # dictionary on read:
+        model1 = persister.read(version=1)
+        assert annotate(model1)['attachments/myatt.txt'] == b'aGV5'
+        assert annotate(model1)['attachments/my2ndatt.txt'] == b'aG8='
+
+    def test_deleted_on_delete(self, persister, tmpdir):
+        # Attachment files are removed from the file system when a
+        # model is deleted:
+        persister.delete(1)
+        assert sorted(os.listdir(tmpdir)) == [
+            'model-2-myatt.txt', 'model-2.pkl.gz',
+            'model-metadata.json',
+            ]
 
 
 class TestDatabase:
@@ -665,7 +736,7 @@ class TestRest:
 
     def test_download(self, mocked_requests, persister):
         """ test download and activation of a model """
-        expected = Dummy(name='mymodel')
+        expected = Dummy(name='mymodel', __metadata__={})
         zipped_model = gzip.compress(pickle.dumps(expected))
 
         get_md_url = "%s/mymodel-metadata.json" % (self.base_url,)

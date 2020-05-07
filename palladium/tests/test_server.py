@@ -320,7 +320,7 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
@@ -342,14 +342,14 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
             'entry_point': '/predict1',
         }
         config['my_predict_service2'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
@@ -381,14 +381,14 @@ class TestPredictService:
 
         config['model_persister'] = Mock()
         config['my_predict_service'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
             'entry_point': '/predict1',  # <--
         }
         config['my_predict_service2'] = {
-            '__factory__': 'palladium.server.PredictService',
+            '!': 'palladium.server.PredictService',
             'mapping': [
                 ('param', 'str'),
             ],
@@ -665,7 +665,7 @@ class TestFitFunctional:
         config['model_persister'] = model_persister
         with flask_app.test_request_context(method='POST'):
             resp = fit()
-        sleep(0.02)
+        sleep(0.05)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'

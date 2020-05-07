@@ -156,7 +156,7 @@ passed at runtime.
             'C': [0.1, 0.3, 1.0],
             },
         'cv': {
-            '__factory__': 'palladium.util.Partial',
+            '!': 'palladium.util.Partial',
             'func': 'sklearn.cross_validation.StratifiedKFold',
             'random_state': 0,
             },
@@ -177,16 +177,16 @@ classifier:
 .. code-block:: python
 
     'grid_search': {
-        '__factory__': 'skopt.BayesSearchCV',
+        '!': 'skopt.BayesSearchCV',
         'estimator': {'__copy__': 'model'},
         'n_iter': 16,
         'search_spaces': {
             'C': {
-                '__factory__': 'skopt.space.Real',
+                '!': 'skopt.space.Real',
                 'low': 1e-6, 'high': 1e+1, 'prior': 'log-uniform',
             },
             'degree': {
-                '__factory__': 'skopt.space.Integer',
+                '!': 'skopt.space.Integer',
                 'low': 1, 'high': 20,
             },
         },
@@ -208,35 +208,34 @@ grid search:
 
 .. code-block:: python
 
+{
     'grid_search': {
-        '__factory__': 'palladium.fit.with_parallel_backend',
+        '!': 'palladium.fit.with_parallel_backend',
         'estimator': {
-            '__factory__': 'sklearn.model_selection.GridSearchCV',
+            '!': 'sklearn.model_selection.GridSearchCV',
             'estimator': {'__copy__': 'model'},
-            'param_grid': {
-                'C': [0.1, 0.3, 1.0],
-            },
-            'n_jobs': -1,
+            'param_grid': {'__copy__': 'grid_search.param_grid'},
+            'scoring': {'__copy__': 'scoring'},
         },
-        'backend': 'dask.distributed',
-        'scheduler_host': '127.0.0.1:8786',
+        'backend': 'dask',
     },
 
-    '_init_distributed': {
-        '__factory__': 'palladium.util.resolve_dotted_name',
-        'dotted_name': 'distributed.joblib.joblib',
+    '_init_client': {
+        '!': 'dask.distributed.Client',
+        'address': '127.0.0.1:8786',
     },
+}
 
-To start up the Dask scheduler and workers you can follow the
-dask.distributed documentation.  Here's an example that runs three
-workers locally:
+For details on how to set up Dask workers and a scheduler, please
+consult the `Dask docs <https://docs.dask.org>`_.  But here's how you
+would start up a scheduler and three workers locally:
 
 .. code-block:: bash
 
     $ dask-scheduler
     Scheduler started at 127.0.0.1:8786
 
-    $ dask-worker 127.0.0.1:8786
+    $ dask-worker 127.0.0.1:8786  # start each in a new terminal
     $ dask-worker 127.0.0.1:8786
     $ dask-worker 127.0.0.1:8786    
 

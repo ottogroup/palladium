@@ -5,34 +5,34 @@
     },
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.R.DatasetLoader',
+        '!': 'palladium.R.DatasetLoader',
         'scriptname': 'iris.R',
         'funcname': 'dataset',
     },
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.R.DatasetLoader',
+        '!': 'palladium.R.DatasetLoader',
         'scriptname': 'iris.R',
         'funcname': 'dataset',
     },
 
     'model': {
-        '__factory__': 'palladium.R.ClassificationModel',
+        '!': 'palladium.R.ClassificationModel',
         'scriptname': 'iris.R',
         'funcname': 'train.randomForest',
         'encode_labels': True,
     },
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'impl': {
-            '__factory__': 'palladium.persistence.Database',
+            '!': 'palladium.persistence.Database',
             'url': 'sqlite:///iris-model.db',
         },
     },
 
     'predict_service': {
-        '__factory__': 'palladium.server.PredictService',
+        '!': 'palladium.server.PredictService',
         'mapping': [
             ('sepal length', 'float'),
             ('sepal width', 'float'),

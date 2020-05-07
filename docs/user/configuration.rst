@@ -31,7 +31,7 @@ you to pass in things like database credentials from the environment:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.SQL',
+        '!': 'palladium.dataset.SQL',
         'url': 'mysql://{}:{}@localhost/test?encoding=utf8'.format(
             environ['DB_USER'], environ['DB_PASS'],
             ),
@@ -46,7 +46,7 @@ folder as the configuration:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': '{}/data.csv'.format(here),
         }
 
@@ -80,7 +80,7 @@ file:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -88,7 +88,7 @@ file:
         }
 
     'dataset_loader_test': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': '{}/test.csv'.format(here),
         'many': '...',
         'more': {'...'},
@@ -100,7 +100,7 @@ With ``__copy__``, you can reduce this down to:
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': '{}/train.csv'.format(here),
         'many': '...',
         'more': {'...'},

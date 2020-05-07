@@ -44,7 +44,7 @@ configuration in that example defines the model to be of type
 .. code-block:: python
 
   'model': {
-      '__factory__': 'palladium.julia.ClassificationModel',
+      '!': 'palladium.julia.ClassificationModel',
       'fit_func': 'SVM.svm',
       'predict_func': 'SVM.predict',
       }

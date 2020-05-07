@@ -23,8 +23,8 @@ tests_require = [
     ]
 
 docs_require = [
-    'julia',
-    'rpy2',
+    # 'julia',
+    # 'rpy2',
     'Sphinx',
     'sphinx_rtd_theme',
     ]

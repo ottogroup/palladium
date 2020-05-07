@@ -4,7 +4,7 @@
 
 {
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',

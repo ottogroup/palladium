@@ -149,7 +149,7 @@ defines the type of dataset loader we want to use.  That is
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
 
 The rest of what is inside the ``dataset_loader_train`` are the
 keyword arguments that are used to initialize the
@@ -159,7 +159,7 @@ keyword arguments that are used to initialize the
 .. code-block:: python
 
     'dataset_loader_train': {
-        '__factory__': 'palladium.dataset.CSV',
+        '!': 'palladium.dataset.CSV',
         'path': 'iris.data',
         'names': [
             'sepal length',
@@ -232,7 +232,7 @@ scikit-learn:
 .. code-block:: python
 
     'model': {
-        '__factory__': 'sklearn.linear_model.LogisticRegression',
+        '!': 'sklearn.linear_model.LogisticRegression',
         'C': 0.3,
         },
 
@@ -367,10 +367,10 @@ part of the configuration:
 .. code-block:: python
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'update_cache_rrule': {'freq': 'HOURLY'},
         'impl': {
-            '__factory__': 'palladium.persistence.Database',
+            '!': 'palladium.persistence.Database',
             'url': 'sqlite:///iris-model.db',
             },
         },
@@ -407,9 +407,9 @@ model's version:
 .. code-block:: python
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'impl': {
-            '__factory__': 'palladium.persistence.File',
+            '!': 'palladium.persistence.File',
             'path': 'model-{version}.pickle',
             },
         },
@@ -420,9 +420,9 @@ models, you can use the RestPersister:
 .. code-block:: python
 
     'model_persister': {
-        '__factory__': 'palladium.persistence.CachedUpdatePersister',
+        '!': 'palladium.persistence.CachedUpdatePersister',
         'impl': {
-            '__factory__': 'palladium.persistence.Rest',
+            '!': 'palladium.persistence.Rest',
             'url': 'http://localhost:8081/artifactory/modelz/{version}',
             'auth': ('username', 'passw0rd'),
             },
@@ -440,7 +440,7 @@ endpoint.  Let us take a look at how it is configured:
 .. code-block:: python
 
     'predict_service': {
-        '__factory__': 'palladium.server.PredictService',
+        '!': 'palladium.server.PredictService',
         'mapping': [
             ('sepal length', 'float'),
             ('sepal width', 'float'),
@@ -450,7 +450,7 @@ endpoint.  Let us take a look at how it is configured:
         }
 
 Again, the specific implementation of the ``predict_service`` that we
-use is specified through the ``__factory__`` setting.
+use is specified through the ``!`` setting.
 
 The ``mapping`` defines which request parameters are to be expected.
 In this example, we expect a ``float`` number for each of ``sepal
@@ -522,7 +522,7 @@ different entry points:
 .. code-block:: python
 
     'predict_service1': {
-        '__factory__': 'mypackage.server.PredictService',
+        '!': 'mypackage.server.PredictService',
         'mapping': [
             ('sepal length', 'float'),
             ('sepal width', 'float'),
@@ -533,7 +533,7 @@ different entry points:
 	'decorator_list_name': 'predict_decorators',
         }
     'predict_service2': {
-        '__factory__': 'mypackage.server.PredictServiceID',
+        '!': 'mypackage.server.PredictServiceID',
         'mapping': [
             ('id', 'int'),
             ],
@@ -590,7 +590,7 @@ entry in ``config.py`` to look like this:
 .. code-block:: python
 
     'model': {
-        '__factory__': 'iris.model',
+        '!': 'iris.model',
         'clf__C': 0.3,
         },
 
@@ -609,7 +609,7 @@ configuration file, e.g.:
 .. code-block:: python
 
     'model': {
-        '__factory__': 'sklearn.pipeline.Pipeline',
-        'steps': [['clf', {'__factory__': 'sklearn.linear_model.LinearRegression'}],
+        '!': 'sklearn.pipeline.Pipeline',
+        'steps': [['clf', {'!': 'sklearn.linear_model.LinearRegression'}],
         ],
     },

@@ -421,7 +421,7 @@ startup:
 .. code-block:: python
 
   'oauth_init_app': {
-      '__factory__': 'myoauth.oauth.init_app',
+      '!': 'myoauth.oauth.init_app',
       'app': 'palladium.server.app',
       },
 
