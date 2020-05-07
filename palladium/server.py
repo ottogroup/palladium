@@ -35,7 +35,7 @@ def make_ujson_response(obj, status_code=200):
     :return:
       A Flask response.
     """
-    json_encoded = ujson.encode(obj, ensure_ascii=False, double_precision=-1)
+    json_encoded = ujson.encode(obj, ensure_ascii=False)
     resp = make_response(json_encoded)
     resp.mimetype = 'application/json'
     resp.content_type = 'application/json; charset=utf-8'

@@ -665,7 +665,7 @@ class TestFitFunctional:
         config['model_persister'] = model_persister
         with flask_app.test_request_context(method='POST'):
             resp = fit()
-        sleep(0.02)
+        sleep(0.05)
         resp_json = json.loads(resp.get_data(as_text=True))
         job = jobs[resp_json['job_id']]
         assert job['status'] == 'finished'
