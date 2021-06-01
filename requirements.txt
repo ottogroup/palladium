@@ -19,6 +19,6 @@ scipy==1.4.1
 six==1.14.0
 SQLAlchemy==1.3.16
 ujson==2.0.3
-urllib3==1.25.9
+urllib3==1.26.5
 Werkzeug==1.0.1
 # julia==0.4.5
