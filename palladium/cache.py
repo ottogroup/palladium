@@ -9,6 +9,7 @@ import hashlib
 from functools import wraps
 import os
 import pickle
+from random import randrange
 from tempfile import gettempdir
 
 from joblib import numpy_pickle
@@ -109,7 +110,10 @@ class diskcache(abstractcache):
     def __setitem__(self, key, value):
         filename = self._filename(key)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        return self.dump(value, filename)
+        filename_tmp = f'{filename}_tmp_{randrange(1_000_000)}'
+        val = self.dump(value, filename_tmp)
+        os.rename(filename_tmp, filename)
+        return val
 
 
 class picklediskcache(diskcache):
