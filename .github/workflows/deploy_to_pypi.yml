@@ -14,8 +14,13 @@ jobs:
         with:
           python-version: '3.10'
       - name: Deploy to pypi
-        run: ./pypi_upload.sh
+        run: .conda_recipe/pypi_upload.sh
         shell: bash
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      - name: Deploy to conda
+        run: .conda_recipe/conda_upload.sh
+        shell: bash
+        env:
+          CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
