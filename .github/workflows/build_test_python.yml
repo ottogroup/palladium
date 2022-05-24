@@ -29,7 +29,7 @@ jobs:
           pip install -r requirements-dev.txt
           python setup.py develop
           conda config --set always_yes yes --set changeps1 no
-          conda install -q --yes -c r rpy2 r-randomforest tzlocal
+          conda install -q --yes -c conda-forge rpy2 r-randomforest tzlocal
           conda update -q conda
           pip install coveralls
           pip install -r requirements.txt -r requirements-dev.txt
