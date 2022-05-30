@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/ottogroup/palladium.svg?branch=master
-    :target: https://travis-ci.org/ottogroup/palladium
+.. image:: https://github.com/ottogroup/palladium/actions/workflows/build_test_python.yml/badge.svg
+    :target: https://github.com/ottogroup/palladium/actions/workflows/build_test_python.yml
     :alt: Build status
 
 .. image:: https://coveralls.io/repos/ottogroup/palladium/badge.svg?branch=master
