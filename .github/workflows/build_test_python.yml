@@ -1,0 +1,39 @@
+name: Build, Lint, Test
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Miniconda ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          python setup.py develop
+          conda config --set always_yes yes --set changeps1 no
+          conda install -q --yes -c conda-forge rpy2 r-randomforest tzlocal
+          conda update -q conda
+          pip install coveralls
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -e .[docs,testing,S3]
+      - name: Test with pytest
+        run: |
+          pytest palladium
