@@ -1,6 +1,6 @@
-cov-core==1.15.0
-coverage==5.1
-pluggy==0.13.1
-pytest==5.4.1
-pytest-cov==2.8.1
-requests-mock==1.8.0
+cov-core
+coverage
+pluggy
+pytest
+pytest-cov
+requests-mock
