@@ -8,7 +8,7 @@ set -ev
 PKG_NAME=palladium
 USER=ottogroup
 
-OS=$TRAVIS_OS_NAME-64
+OS=linux-64
 mkdir ~/conda-bld
 
 conda install conda-build
