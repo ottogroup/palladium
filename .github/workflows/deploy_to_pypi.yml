@@ -19,6 +19,9 @@ jobs:
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      - name: Add conda to path
+        run: |
+          echo $CONDA/bin >> $GITHUB_PATH
       - name: Deploy to conda
         run: ./conda_recipe/conda_upload.sh
         shell: bash
