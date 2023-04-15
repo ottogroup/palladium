@@ -52,7 +52,7 @@ class ComponentHandler:
         component = factory(**specification)
         try:
             component.__pld_config_key__ = name
-        except AttributeError:
+        except (AttributeError, ValueError):
             pass
         self.components.append(component)
         return component
