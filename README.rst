@@ -25,6 +25,8 @@
 Palladium
 =========
 
+*Palladium is no longer under development.*
+
 Palladium provides means to easily set up predictive
 analytics services as web services.  It is a **pluggable framework**
 for developing real-world **machine learning solutions**.  It provides
@@ -84,5 +86,3 @@ Links
 
 - Source code repository at GitHub: https://github.com/ottogroup/palladium
 - Documentation including installation instructions and tutorial: http://palladium.readthedocs.org
-- Mailing list: https://groups.google.com/forum/#!forum/pld-list
-- Maintainer: `Andreas Lattner <https://github.com/alattner>`_
